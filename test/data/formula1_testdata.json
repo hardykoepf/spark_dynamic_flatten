@@ -1,0 +1,171 @@
+{
+    "season": 2023,
+    "teams": [
+      {
+        "team_name": "Mercedes",
+        "drivers": [
+          {
+            "driver_id": 1,
+            "name": "Lewis Hamilton",
+            "nationality": "British",
+            "races": [
+              {
+                "race_id": 1,
+                "race_name": "Australian Grand Prix",
+                "position": 2,
+                "points": 18,
+                "laps": [
+                  {
+                    "lap_number": 1,
+                    "time": "1:25.123"
+                  },
+                  {
+                    "lap_number": 2,
+                    "time": "1:24.987"
+                  }
+                ]
+              },
+              {
+                "race_id": 2,
+                "race_name": "Bahrain Grand Prix",
+                "position": 1,
+                "points": 25,
+                "laps": [
+                  {
+                    "lap_number": 1,
+                    "time": "1:30.456"
+                  },
+                  {
+                    "lap_number": 2,
+                    "time": "1:29.789"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "driver_id": 2,
+            "name": "George Russell",
+            "nationality": "British",
+            "races": [
+              {
+                "race_id": 1,
+                "race_name": "Australian Grand Prix",
+                "position": 5,
+                "points": 10,
+                "laps": [
+                  {
+                    "lap_number": 1,
+                    "time": "1:26.789"
+                  },
+                  {
+                    "lap_number": 2,
+                    "time": "1:26.456"
+                  }
+                ]
+              },
+              {
+                "race_id": 2,
+                "race_name": "Bahrain Grand Prix",
+                "position": 3,
+                "points": 15,
+                "laps": [
+                  {
+                    "lap_number": 1,
+                    "time": "1:31.123"
+                  },
+                  {
+                    "lap_number": 2,
+                    "time": "1:30.789"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      },
+      {
+        "team_name": "Red Bull Racing",
+        "drivers": [
+          {
+            "driver_id": 3,
+            "name": "Max Verstappen",
+            "nationality": "Dutch",
+            "races": [
+              {
+                "race_id": 1,
+                "race_name": "Australian Grand Prix",
+                "position": 1,
+                "points": 25,
+                "laps": [
+                  {
+                    "lap_number": 1,
+                    "time": "1:24.123"
+                  },
+                  {
+                    "lap_number": 2,
+                    "time": "1:23.987"
+                  }
+                ]
+              },
+              {
+                "race_id": 2,
+                "race_name": "Bahrain Grand Prix",
+                "position": 2,
+                "points": 18,
+                "laps": [
+                  {
+                    "lap_number": 1,
+                    "time": "1:29.456"
+                  },
+                  {
+                    "lap_number": 2,
+                    "time": "1:28.789"
+                  }
+                ]
+              }
+            ]
+          },
+          {
+            "driver_id": 4,
+            "name": "Sergio Perez",
+            "nationality": "Mexican",
+            "races": [
+              {
+                "race_id": 1,
+                "race_name": "Australian Grand Prix",
+                "position": 3,
+                "points": 15,
+                "laps": [
+                  {
+                    "lap_number": 1,
+                    "time": "1:25.789"
+                  },
+                  {
+                    "lap_number": 2,
+                    "time": "1:25.456"
+                  }
+                ]
+              },
+              {
+                "race_id": 2,
+                "race_name": "Bahrain Grand Prix",
+                "position": 4,
+                "points": 12,
+                "laps": [
+                  {
+                    "lap_number": 1,
+                    "time": "1:30.123"
+                  },
+                  {
+                    "lap_number": 2,
+                    "time": "1:29.789"
+                  }
+                ]
+              }
+            ]
+          }
+        ]
+      }
+    ]
+  }

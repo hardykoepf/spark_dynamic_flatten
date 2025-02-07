@@ -1,0 +1,127 @@
+{
+    "type": "struct",
+    "fields": [
+      {
+        "name": "season",
+        "type": "integer",
+        "nullable": true,
+        "metadata": {}
+      },
+      {
+        "name": "teams",
+        "type": {
+          "type": "array",
+          "elementType": {
+            "type": "struct",
+            "fields": [
+              {
+                "name": "team_name",
+                "type": "string",
+                "nullable": true,
+                "metadata": {}
+              },
+              {
+                "name": "drivers",
+                "type": {
+                  "type": "array",
+                  "elementType": {
+                    "type": "struct",
+                    "fields": [
+                      {
+                        "name": "driver_id",
+                        "type": "integer",
+                        "nullable": true,
+                        "metadata": {}
+                      },
+                      {
+                        "name": "name",
+                        "type": "string",
+                        "nullable": true,
+                        "metadata": {}
+                      },
+                      {
+                        "name": "nationality",
+                        "type": "string",
+                        "nullable": true,
+                        "metadata": {}
+                      },
+                      {
+                        "name": "races",
+                        "type": {
+                          "type": "array",
+                          "elementType": {
+                            "type": "struct",
+                            "fields": [
+                              {
+                                "name": "race_id",
+                                "type": "integer",
+                                "nullable": true,
+                                "metadata": {}
+                              },
+                              {
+                                "name": "race_name",
+                                "type": "string",
+                                "nullable": true,
+                                "metadata": {}
+                              },
+                              {
+                                "name": "position",
+                                "type": "integer",
+                                "nullable": true,
+                                "metadata": {}
+                              },
+                              {
+                                "name": "points",
+                                "type": "integer",
+                                "nullable": true,
+                                "metadata": {}
+                              },
+                              {
+                                "name": "laps",
+                                "type": {
+                                  "type": "array",
+                                  "elementType": {
+                                    "type": "struct",
+                                    "fields": [
+                                      {
+                                        "name": "lap_number",
+                                        "type": "integer",
+                                        "nullable": true,
+                                        "metadata": {}
+                                      },
+                                      {
+                                        "name": "time",
+                                        "type": "string",
+                                        "nullable": true,
+                                        "metadata": {}
+                                      }
+                                    ]
+                                  },
+                                  "containsNull": true
+                                },
+                                "nullable": true,
+                                "metadata": {}
+                              }
+                            ]
+                          },
+                          "containsNull": true
+                        },
+                        "nullable": true,
+                        "metadata": {}
+                      }
+                    ]
+                  },
+                  "containsNull": true
+                },
+                "nullable": true,
+                "metadata": {}
+              }
+            ]
+          },
+          "containsNull": true
+        },
+        "nullable": true,
+        "metadata": {}
+      }
+    ]
+  }
