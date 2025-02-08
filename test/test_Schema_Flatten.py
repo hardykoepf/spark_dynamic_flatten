@@ -1,8 +1,7 @@
-import pytest
-from spark_dynamic_flatten.Tree import Tree, FlattenTree, SchemaTree
-from spark_dynamic_flatten.TreeManager import TreeManager
-from .utils import relative_to_absolute
 import json
+import pytest
+from spark_dynamic_flatten.tree_manager import TreeManager
+from .utils import relative_to_absolute
 
 @pytest.fixture
 def tm():

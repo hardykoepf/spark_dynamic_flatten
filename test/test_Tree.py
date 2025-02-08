@@ -1,5 +1,5 @@
 import pytest
-from spark_dynamic_flatten.Tree import Tree
+from spark_dynamic_flatten.tree import Tree
 
 @pytest.fixture
 def create_tree():

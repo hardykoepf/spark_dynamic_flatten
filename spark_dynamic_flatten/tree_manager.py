@@ -1,9 +1,9 @@
-from spark_dynamic_flatten.Tree import Tree, FlattenTree, SchemaTree
+from spark_dynamic_flatten.tree import Tree, FlattenTree, SchemaTree
 import os
 import json
 from pyspark.sql.types import StructType, ArrayType
 
-class TreeManager(object):
+class TreeManager:
     """
     TreeManager class is used create a Tree-object out of:
         - a pyspark schema file for example for easy comparison of schemas
@@ -13,8 +13,6 @@ class TreeManager(object):
     Attributes
     ----------
         self.root : reference to root node of created tree
-        self.source_table : source table name
-        self.target_table : target table name
 
     Methods
     -------
@@ -34,7 +32,7 @@ class TreeManager(object):
         target_table : str
             Name of the target table - additional information for flattening purposes
         """
-        # Create root instance of 
+        # Create root instance of
         self.root = tree_class("root")
 
     def _add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False) -> None:
@@ -72,7 +70,7 @@ class TreeManager(object):
             Tree or one of the inherited classes of Tree
         """
         return self.root
-    
+
     @staticmethod
     def from_struct_type(struct: StructType) -> "TreeManager":
         """
@@ -103,7 +101,7 @@ class TreeManager(object):
         """
         struct = StructType.fromJson(json.loads(schema))
         return TreeManager.from_struct_type(struct)
-    
+
     @staticmethod
     def from_schema_json_file(file_path: str) -> "TreeManager":
         """
@@ -124,7 +122,6 @@ class TreeManager(object):
     def from_flatten_json_dict(json_dict: dict) -> "TreeManager":
         """
         Creates a tree based on a configuration dict for purpose of flatten a nested pyspark Dataframe.
-
 
         Parameters
         ----------
