@@ -77,6 +77,7 @@ To summarize, for every path/field to be flattened, a dictionary with following 
 - path
 - alias
 - is_identifier
+
 E.g.:
 {"path": "node1.node2.node3.leaf_field", "alias": "leaf_alias", "is_identifier": False}
 
@@ -84,9 +85,10 @@ At least, the paths are collected by an outer dict with the key "field_paths"
 E.g.:
 ```
 { "field_paths": [
-{"path": "node1.node2.node3.leaf_field", "alias": "leaf_alias", "is_identifier": False},
-{"path": "node11.node22.node33.leaf_field2", "alias": None, "is_identifier": False}
-]}
+    {"path": "node1.node2.node3.leaf_field", "alias": "leaf_alias", "is_identifier": False},
+    {"path": "node11.node22.node33.leaf_field2", "alias": None, "is_identifier": False}
+    ]
+}
 ```
 
 To import the configuration, you have the option to have it as json file, json string or within a dict. Therefore again the TreeManager is used.
