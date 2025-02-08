@@ -18,7 +18,7 @@ To install the dependencies for this project, you can use [Poetry](https://pytho
 
 1. Clone the repository:
    ```sh
-   git clone https://github.com/yourusername/pyspark_dataframe_tools.git
+   git clone https://github.com/hardykoepf/pyspark_dataframe_tools.git
    cd pyspark_dataframe_tools
 
 ## Classes within this solution
