@@ -1,6 +1,7 @@
 from pyspark.sql.types import StructType, ArrayType, StructField, StringType, IntegerType, FloatType, BooleanType, DoubleType, LongType, ShortType, ByteType, DateType, TimestampType, DecimalType, BinaryType, NullType, DataType
 from typing import List, Tuple, Optional, TypeVar, Union
 import json
+import os
 
 basic_spark_types = TypeVar(IntegerType, FloatType, BooleanType, DoubleType, LongType, ShortType, ByteType, DateType, TimestampType, DecimalType, BinaryType, NullType, DataType)
 
@@ -585,13 +586,13 @@ class SchemaTree(Tree):
                 list_of_parent_nodes.append(field.name)
                 new_node.add_struct_type_to_tree(field.dataType.elementType, list_of_parent_nodes)
     
-    def generate_fully_flattened_paths(self) -> json:
+    def generate_fully_flattened_paths(self) -> dict:
         """
         Generates a field-path list which can be used as starting point for flattening configuration.
 
         Returning
         ----------
-        list: List with dicts to every leaf-path
+        dict: Dictionary with every leaf-path can be used for flatten logic
         """
         leafs = self.get_leafs()
         fields = []
@@ -599,5 +600,36 @@ class SchemaTree(Tree):
             fields.append({"path": leaf.get_path_to_node("."),
                            "is_identifier": False,
                            "alias": None})
-        # Embed List in dict and convert to json
-        return json.dumps({"field-paths": fields})
+        # Embed List in dict-key field-paths which is entry point for creating a TreeFlatten
+        return {"field_paths": fields}
+    
+    def generate_fully_flattened_json(self) -> json:
+        """
+        Generates a field-path list which can be used as starting point for flattening configuration.
+
+        Returning
+        ----------
+        Json: Json-String with every leaf-path can be used for flatten logic
+        """
+        return json.dumps(self.generate_fully_flattened_paths())
+    
+    def save_fully_flattened_json(self, path, file_name):
+        """
+        Saves a json file with configuration to fully flatten the tree.
+        This file can directly be used for flattening (if the schema should be fully flattened).
+
+        Hint:
+        When a leaf-name (leaf-nodes) is not unique you have to take care to define aliases, to be unique on leaf level!
+        """
+        if os.path.isabs(path):
+            file_path = os.path.join(path, file_name)
+        else:
+            file_path = os.path.join(os.path.abspath(path), file_name)
+
+        raw_file_path = r"{}".format(file_path)
+
+        json_str = self.generate_fully_flattened_json()
+
+        with open(raw_file_path, "w",) as file:
+            file.write(json_str)
+        print(f"File {file_path} was sucessfully written.")

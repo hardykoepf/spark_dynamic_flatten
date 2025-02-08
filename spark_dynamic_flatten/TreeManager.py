@@ -165,6 +165,8 @@ class TreeManager(object):
             Json file with following structure {source_table, target_table, field_paths [{path, alias, in_identifier}]}
         """
         assert file_path is not None
+        if not os.path.isabs(file_path):
+            file_path = os.path.abspath(file_path)
         # Open the file at the reference path and read its contents as a JSON string
         with open(file_path, "r") as f:
             # Parse the JSON string into a TreeManager and return it

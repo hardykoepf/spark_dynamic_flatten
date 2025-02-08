@@ -40,6 +40,14 @@ def test_get_tree_as_list(tm_root):
     assert tree_list[0] == ('season', 'integer', True, None, None)
 
 def test_generate_fully_flattened_paths(tm_root):
-    tree_json = tm_root.generate_fully_flattened_paths()
-    tree_dict = json.loads(tree_json)
-    assert len(tree_dict["field-paths"]) == 11
+    tree_dict = tm_root.generate_fully_flattened_paths()
+    assert len(tree_dict["field_paths"]) == 11
+
+@pytest.fixture
+def write_flatten_json(tm_root):
+    tm_root.save_fully_flattened_json("test/data/", "formula1_flatten.json")
+
+def test_flatten(write_flatten_json):
+    tm = TreeManager.from_flatten_json_file("test/data/formula1_flatten.json")
+    # TreeManager imports the file again as tree. So children of root node has again to be 2 (season, teams)
+    assert len(tm.get_root_node().get_children()) == 2
