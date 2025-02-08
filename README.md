@@ -48,23 +48,21 @@ A helpful function comes with SchemaTree is to compare schemas of two PySpark da
 
 ```
 from spark_dynamic_flatten.tree_manager import TreeManager
-from spark_dynamic_flatten.tree import SchemaTree
 
-tree_schema1 = TreeManager.from_struct_type(df1.schema).get_root()
-tree_schema2 = TreeManager.from_struct_type(df2.schema).get_root()
+tree_schema1 = TreeManager.from_struct_type(df1.schema).get_root_node()
+tree_schema2 = TreeManager.from_struct_type(df2.schema).get_root_node()
 
 equals, differences = tree_schema1.equals(tree_schema2)
 ```
 
-#### Generate configuration for fulkly flattening a dataframe
+#### Generate configuration for fully flattening a dataframe
 
 After parsing the schema of dataframe to a tree object, we generate the json config we can use for completely flatten the dataframe (or modify if we only need specific fields flattened).
 
 ```
 from spark_dynamic_flatten.tree_manager import TreeManager
-from spark_dynamic_flatten.tree import SchemaTree
 
-tree_schema1 = TreeManager.from_struct_type(df1.schema).get_root()
+tree_schema1 = TreeManager.from_struct_type(df1.schema).get_root_node()
 json_string = tree_schema1.generate_fully_flattened_json()
 ```
 

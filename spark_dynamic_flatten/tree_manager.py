@@ -113,13 +113,16 @@ class TreeManager:
             Path to the pyspark schema file
         """
         assert file_path is not None
+        if not os.path.isabs(file_path):
+            file_path = os.path.abspath(file_path)
+        raw_file_path = r"{}".format(file_path)
         # Open the file at the reference path and read its contents as a JSON string
-        with open(file_path, "r") as f:
+        with open(raw_file_path, "r") as f:
             # Parse the JSON string into a TreeManager and return it
             return TreeManager.from_schema_json_string(f.read())
 
     @staticmethod
-    def from_flatten_json_dict(json_dict: dict) -> "TreeManager":
+    def from_flatten_dict(json_dict: dict) -> "TreeManager":
         """
         Creates a tree based on a configuration dict for purpose of flatten a nested pyspark Dataframe.
 
@@ -148,7 +151,7 @@ class TreeManager:
             Json string with following structure {source_table, target_table, field_paths [{path, alias, in_identifier}]}
         """
         json_dict = json.loads(json_string)
-        return TreeManager.from_flatten_json_dict(json_dict)
+        return TreeManager.from_flatten_dict(json_dict)
 
     @staticmethod
     def from_flatten_json_file(file_path: str) -> "TreeManager":
@@ -164,7 +167,8 @@ class TreeManager:
         assert file_path is not None
         if not os.path.isabs(file_path):
             file_path = os.path.abspath(file_path)
+        raw_file_path = r"{}".format(file_path)
         # Open the file at the reference path and read its contents as a JSON string
-        with open(file_path, "r") as f:
+        with open(raw_file_path, "r") as f:
             # Parse the JSON string into a TreeManager and return it
             return TreeManager.from_flatten_json_string(f.read())
