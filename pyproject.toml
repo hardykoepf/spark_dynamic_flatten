@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "spark-dynamic-flatten"
-version = "0.1.0"
+version = "0.1.1"
 description = "Tools for pyspark dataframes to dynamically flatten based on configuration and compare schemas"
 authors = ["Hartmut Koepf"]
 license = "MIT"

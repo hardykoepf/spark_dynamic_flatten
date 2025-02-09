@@ -1,7 +1,7 @@
 from spark_dynamic_flatten.tree_manager import TreeManager
-from spark_dynamic_flatten.flatten import Flatten
+# from spark_dynamic_flatten.flatten import Flatten
 
-# Create trees based on schema json 
+# Create trees based on schema json
 tree_schema1 = TreeManager.from_schema_json_file("examples/formula1_schema.json").get_root_node()
 tree_schema2 = TreeManager.from_schema_json_file("examples/formula1_schema.json").get_root_node()
 

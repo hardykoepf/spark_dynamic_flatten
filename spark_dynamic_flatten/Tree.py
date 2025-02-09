@@ -92,10 +92,7 @@ class Tree:
         return repr(self._name)
 
     def __eq__(self, other) -> bool:
-        if repr(self) == repr(other):
-            return True
-        else:
-            return False
+        return bool(repr(self) == repr(other))
 
     def set_name(self, name:str):
         """
