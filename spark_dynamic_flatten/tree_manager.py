@@ -1,3 +1,5 @@
+"""TreeManager is used to create Trees based on spark schema or for flattening based on flatten configuration."""
+
 from spark_dynamic_flatten.tree import Tree, FlattenTree, SchemaTree
 import os
 import json

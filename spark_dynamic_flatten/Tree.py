@@ -1,3 +1,5 @@
+"""Module providing special Trees. A generic Tree, SchemaTree for spark schema and FlattenTree for flattening a dataframe."""
+
 from typing import List, Tuple, Optional, TypeVar, Union
 import json
 import os
@@ -36,6 +38,8 @@ class Tree:
         Set the parent node
     is_leaf()
         Check if the node is a leaf node
+    get_root()
+        Returns the root of the tree of node
     is_root()
         Check if node is root node
     get_leafs()
@@ -163,11 +167,18 @@ class Tree:
         self._parent = node
         node.add_child(self)
 
-    def _get_root(self) -> "Tree":
-        if self._parent is None:
+    def get_root(self) -> "Tree":
+        """
+        Returns the root of tree to which the node is related
+
+        Returning
+        ----------
+        "Tree" : Root node
+        """
+        if self.get_parent() is None:
             return self
         else:
-            root = self._parent._get_root()
+            root = self.get_parent().get_root()
             return root
 
     def is_leaf(self) -> bool:
@@ -196,15 +207,15 @@ class Tree:
         else:
             return False
 
-    def _get_leafs(self, leafs:Optional[List] = None) -> List["Tree"]:
+    def _get_leafs(self, node:"Tree", leafs:Optional[List] = None) -> List["Tree"]:
         # Attention: Here we are not working with copies of the list.
         # We are working with one central list and handing over the pointers!
-        if self._name == "root":
+        if node.get_name() == "root":
             leafs = []
-        if self.is_leaf():
-            leafs.append(self)
-        for child in self._children:
-            leafs = child._get_leafs(leafs)
+        if node.is_leaf():
+            leafs.append(node)
+        for child in node.get_children():
+            leafs = self._get_leafs(child, leafs)
         return leafs
 
     def get_leafs(self) -> List:
@@ -217,8 +228,8 @@ class Tree:
             List with all references to the leaf nodes
         """
         # Make sure to start from root
-        root = self._get_root()
-        return root._get_leafs()
+        root = self.get_root()
+        return root._get_leafs(root)
 
     def get_leafs_as_paths(self) -> List[str]:
         """
@@ -232,16 +243,16 @@ class Tree:
         # Get paths to leafs of tree
         return [leaf.get_path_to_node(".") for leaf in self.get_leafs()]
 
-    def _get_tree_as_list(self, tree_list:Optional[List] = []) -> List:
+    def _get_tree_as_list(self, node:"Tree", tree_list:Optional[List] = None) -> List:
         # Attention: Here we are not working with copies of the list.
         # We are working with one central list and handing over the pointers!
-        if self._name == "root":
+        if node.get_name() == "root":
             # Ignore root node because its no "real" node
             tree_list = []
         else:
-            tree_list.append(self.get_path_to_node("."))
-        for child in self._children:
-            tree_list = child._get_tree_as_list(tree_list)
+            tree_list.append(node.get_path_to_node("."))
+        for child in node.get_children():
+            tree_list = self._get_tree_as_list(child, tree_list)
         return tree_list
 
     def get_tree_as_list(self) -> List:
@@ -254,8 +265,8 @@ class Tree:
         list
             List with every node path of the tree.
         """
-        root = self._get_root()
-        return root._get_tree_as_list()
+        root = self.get_root()
+        return self._get_tree_as_list(root)
 
     def equals(self, other:"Tree") -> Tuple[bool, set]:
         """
@@ -281,12 +292,12 @@ class Tree:
         else:
             return False, set("Type mismatch")
 
-    def _search_node_by_name(self, name:str) -> Union["Tree",None]:
-        if self._name == name:
-            return self
+    def _search_node_by_name(self, node, name:str) -> Union["Tree",None]:
+        if node.get_name() == name:
+            return node
         else:
-            for child in self._children:
-                result = child._search_node_by_name(name)
+            for child in node.get_children():
+                result = self._search_node_by_name(child, name)
                 if result is not None:
                     return result
             return None
@@ -309,31 +320,31 @@ class Tree:
             If nothing was found it will return None
         """
         # Make sure to start from root
-        root = self._get_root()
-        return root._search_node_by_name(name)
+        root = self.get_root()
+        return self._search_node_by_name(root, name)
 
-    def _search_node_by_path(self, path_list:List[str]) -> Tuple["Tree", List[str]]:
-        if self._name == path_list[0]:
+    def _search_node_by_path(self, node:"Tree", path_list:List[str]) -> Tuple["Tree", List[str]]:
+        if node.get_name() == path_list[0]:
             # I'm the next searched node. So remove my name from path and look if ther
             # is one of my children which we are searching
             temp_list = path_list.copy()
             temp_list.pop(0)
             if len(temp_list) > 0:
                 # We are searching a deeper node - ask the children
-                for child in self._children:
-                    child_node, returned_list = child._search_node_by_path(temp_list)
+                for child in node.get_children():
+                    child_node, returned_list = self._search_node_by_path(child, temp_list)
                     if len(returned_list) < len(temp_list):
                         # The child was part of the searched branch
                         return child_node, returned_list
             # There was no child which fits better to the searched path.
             # So I'm the best guess by my own
-            return self, temp_list
+            return node, temp_list
         else:
             # This node is wrong
-            assert self._parent is not None, "Seems that root was not first node of the path"
-            return self._parent, path_list
+            assert node.get_parent() is not None, "Seems that root was not first node of the path"
+            return node.get_parent(), path_list
 
-    def search_node_by_path(self, path_list:List[str]) -> Tuple["Tree", List[str]]:
+    def search_node_by_path(self, path:Union[List[str], str]) -> Tuple["Tree", List[str]]:
         """
         Searches for the nearest node in a tree.
         E.g.: When the tree has following hierarchy stored "node1->node12" and we search for path
@@ -342,8 +353,10 @@ class Tree:
 
         Parameters
         ----------
-        path_list : list[str]
-            Searched path as list, where the list has to be ordered (root node )
+        path : Union[List[str], str]
+            Searched path as list (already splitted), where the list has to be in order by layers
+            or
+            string separated by "." -> Like "node1.node2.node3"
         
         Returns
         ----------
@@ -351,14 +364,17 @@ class Tree:
             The Tree is the nearest found node, the list includes the missing part of the path
         """
         # Make sure to start from root
-        root = self._get_root()
+        root = self.get_root()
         # Because root is no "real" node, we have to add it to the path (when not already there)
         # before starting logic to search
-        temp_list = path_list.copy()
+        if isinstance(path, str):
+            temp_list = path.split(".")
+        else:
+            temp_list = path.copy()
         if root != temp_list[0]:
-            temp_list.insert(0, root._name)
+            temp_list.insert(0, root.get_name())
         # Start to search for best node which is next to the searched path
-        next_node, missed_nodes = root._search_node_by_path(temp_list)
+        next_node, missed_nodes = self._search_node_by_path(root, temp_list)
         return next_node, missed_nodes
 
     def add_path_to_tree(self, path:str) -> None:
@@ -387,7 +403,7 @@ class Tree:
                 # For next iteration set "nearest_node" to actually created new_node
                 nearest_node = new_node
 
-    def _print_tree(self, layer:int = 0):
+    def _print_tree(self, node:"Tree", layer:int = 0):
         layer_int = layer
         count = 0
         output = ""
@@ -395,32 +411,17 @@ class Tree:
             output = output + "|   "
             count = count + 1
         if count == layer_int:
-            print(f"{output}|-- {repr(self)}")
-        for child in self._children:
-            child._print_tree(layer_int+1)
+            print(f"{output}|-- {repr(node)}")
+        for child in node.get_children():
+            self._print_tree(child, layer_int+1)
 
     def print_tree(self):
         """
         Prints the tree
         """
         # Be sure to start from root node
-        root = self._get_root()
-        root._print_tree()
-
-    def _build_ancestors_list(self) -> List["Tree"]:
-        if self._ancestors_list != None:
-            return self._ancestors_list
-        elif self._parent == None or self._parent._name == "root":
-            # root doesn't have ancestors
-            # and first "real node" layer should not have root as ancestor because root is no "real" node
-            self._ancestors_list = []
-            return self._ancestors_list
-        else:
-            returned_list = self._parent._build_ancestors_list()
-            # Copy the returned list from parent, otherwise we change the list of "pointer"
-            self._ancestors_list = returned_list.copy()
-            self._ancestors_list.append(self._parent)
-            return self._ancestors_list
+        root = self.get_root()
+        self._print_tree(root)
 
     def build_ancestors_list(self) -> None:
         """
@@ -431,9 +432,33 @@ class Tree:
         path : str
             Path to be pigeonholed to the tree
         """
-        # Build list of ancestors if not already done once for this node
+        if self._ancestors_list is not None:
+            return self._ancestors_list
+        
+        if self.get_parent() is None or self.get_parent().get_name() == "root":
+            # root doesn't have ancestors
+            # and first "real node" layer should not have root as ancestor because root is no "real" node
+            self._ancestors_list = []
+            return self._ancestors_list
+
+        parent = self.get_parent()
+        returned_list = parent.get_ancestors_list()
+        # Copy the returned list from parent, otherwise we change the list of "pointer"
+        self._ancestors_list = returned_list.copy()
+        self._ancestors_list.append(self._parent)
+        return self._ancestors_list
+
+    def get_ancestors_list(self) -> List["Tree"]:
+        """
+        Returns the ancestors of a node as ordered list
+
+        Returning
+        ----------
+        List["Tree"] : Odered List of ancestors. Direct ancestor is at end of list
+        """
         if self._ancestors_list is None:
-            self._build_ancestors_list()
+            self.build_ancestors_list()
+        return self._ancestors_list
 
     def get_path_to_node(self, split_char: str) -> str:
         """
@@ -444,25 +469,27 @@ class Tree:
         split_char : str
             Character used for dividing the nodes
         """
-        # Make sure ancestors list was built
-        self._build_ancestors_list()
-        return "".join(f"{parent._name}{split_char}" for parent in self._ancestors_list) + self._name
+        return "".join(f"{parent.get_name()}{split_char}" for parent in self.get_ancestors_list()) + self.get_name()
 
-    def _get_tree_layered(self, layer:int = 0, layer_list:Optional[List["Tree"]] = []) -> List["Tree"]:
-        layer_list = layer_list.copy()
-        if self._parent is not None:
+    def _get_tree_layered(self, node:"Tree", layer:int = 0, layer_list:Optional[List["Tree"]] = None) -> List["Tree"]:
+        if node.is_root():
+            # When root create empty list. Root is no "real" node and has to be ignored.
+            layer_list = []
+        else:
+            layer_list = layer_list.copy()
+        if node.get_parent() is not None:
             # Only when not root entry
             # Check if list index exist
             if len(layer_list) >= layer+1:
-                layer_list[layer].append(self)
+                layer_list[layer].append(node)
             else:
                 # first entry of list index - insert nested list
-                layer_list.append([self])
+                layer_list.append([node])
 
             layer = layer +1
 
-        for child in self._children:
-            layer_list = child._get_tree_layered(layer, layer_list)
+        for child in node.get_children():
+            layer_list = self._get_tree_layered(child, layer, layer_list)
         return layer_list
 
     def get_tree_layered(self) -> List["Tree"]:
@@ -475,8 +502,8 @@ class Tree:
         list[list[Tree]]
             Every layer of the tree represents one inner list
         """
-        root = self._get_root()
-        return root._get_tree_layered()
+        root = self.get_root()
+        return self._get_tree_layered(root)
 
 
 class FlattenTree(Tree):
@@ -625,9 +652,32 @@ class SchemaTree(Tree):
         else:
             rep = f"{self._name} : {self.data_type}"
         return repr(rep)
-    
 
-    def _get_tree_as_list(self, tree_list:List = []) -> List[Tuple]:
+    def get_data_type(self):
+        """
+        Returns the data type of the node
+        """
+        return self.data_type
+
+    def get_nullable(self) -> bool:
+        """
+        Returns the nullable setting of the node
+        """
+        return self.nullable
+
+    def get_element_type(self):
+        """
+        Returns the element_type of the node
+        """
+        return self.element_type
+
+    def get_contains_null(self):
+        """
+        Returns the contains_null setting of element type of the node
+        """
+        return self.contains_null
+
+    def _get_tree_as_list(self, node:"Tree", tree_list:List = None) -> List[Tuple]:
         """
         Returns the tree as list with tuples. Every single node is one list entity.
         The tuples contain the path to the node, data type, nullable, element type and contains null.
@@ -640,13 +690,13 @@ class SchemaTree(Tree):
         """
         # Attention: Here we are not working with copies of the list.
         # We are working with one central list and handing over the pointers!
-        if self._name == "root":
+        if node.get_name() == "root":
             # Ignore root node because its no "real" node
             tree_list = []
         else:
-            tree_list.append((self.get_path_to_node("."), self.data_type, self.nullable, self.element_type, self.contains_null))
-        for child in self._children:
-            tree_list = child._get_tree_as_list(tree_list)
+            tree_list.append((node.get_path_to_node("."), node.get_data_type(), node.get_nullable(), node.get_element_type(), node.get_contains_null()))
+        for child in node.get_children():
+            tree_list = self._get_tree_as_list(child, tree_list)
         return tree_list
 
     def add_struct_type_to_tree(self, struct:StructType, parents:List[str] = []) -> None:
@@ -730,10 +780,10 @@ class SchemaTree(Tree):
         else:
             file_path = os.path.join(os.path.abspath(path), file_name)
 
-        raw_file_path = r"{}".format(file_path)
+        raw_file_path = r"{}".format(file_path)  # pylint: disable=C0209
 
         json_str = self.generate_fully_flattened_json()
 
-        with open(raw_file_path, "w",) as file:
+        with open(raw_file_path, "w", encoding="utf-8") as file:
             file.write(json_str)
         print(f"File {file_path} was sucessfully written.")

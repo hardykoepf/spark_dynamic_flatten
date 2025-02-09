@@ -37,6 +37,17 @@ def leaf_node(create_tree):
     #Search node in middle of hierarchy with childrens
     return create_tree.search_node_by_name("node_5_3")
 
+def test_search_node_by_path(create_tree, mid_node):
+    #Search node by path
+    nearest_node, _ = create_tree.search_node_by_path("node_1_1.node_2_2.node_3_3")
+    assert nearest_node.get_name() == mid_node.get_name()
+    nearest_node, missed_path = create_tree.search_node_by_path("node_1_1.node_2_2.node_3_3.not_existing_node")
+    assert nearest_node.get_name() == mid_node.get_name()
+    assert len(missed_path) == 1
+
+def test_get_root(mid_node):
+    assert mid_node.get_root().get_name() == "root"
+
 def test_get_children(mid_node):
     assert len(mid_node.get_children()) == 4
 

@@ -1,3 +1,5 @@
+"""Flatten offers logic for flatten dataframe based on a FlattenTree"""
+
 from typing import Optional, Tuple, List
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, explode_outer
