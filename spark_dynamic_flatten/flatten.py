@@ -4,16 +4,23 @@ from typing import Optional, Tuple, List
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, explode_outer
 from pyspark.sql.types import ArrayType, StructType
-from spark_dynamic_flatten.tree import Tree, FlattenTree
-
+from spark_dynamic_flatten.tree import FlattenTree
 
 class Flatten:
+    """
+    This class provides logic for flatten a deeply nested dataframe based on configuration.
+
+    Methods
+    -------
+    flatten()
+        returns a flattened dataframe
+    """
     # Constant Charater used for divide path. E.g field1#field12#field123
     SPLIT_CHAR = "#"
 
     @staticmethod
-    def _select_to_rename(df:DataFrame, map:List[Tuple]) -> DataFrame:
-        df = df.select(*[col(column).alias(alias) for column, alias in map])
+    def _select_to_rename(df:DataFrame, map_list:List[Tuple]) -> DataFrame:
+        df = df.select(*[col(column).alias(alias) for column, alias in map_list])
         return df
 
     @staticmethod
@@ -25,7 +32,7 @@ class Flatten:
         duplicates = []
         for leaf in leafs:
             path_of_leaf = leaf.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
-            if leaf.get_alias() == None:
+            if leaf.get_alias() is None:
                 rename_to = leaf.get_name()
             else:
                 rename_to = leaf.get_alias()
@@ -42,9 +49,9 @@ class Flatten:
         return map_alias
 
     @staticmethod
-    def _select_structtype(df:DataFrame, map:List[Tuple]) -> DataFrame:
+    def _select_structtype(df:DataFrame, map_list:List[Tuple]) -> DataFrame:
         # Select fields of StructType. Every field needs to have a tuple with column_name of StrucType, field_name of child and alias.
-        df = df.select("*", *[col(column).getItem(child).alias(alias) for column, child, alias in map])
+        df = df.select("*", *[col(column).getItem(child).alias(alias) for column, child, alias in map_list])
         return df
 
     @staticmethod
@@ -70,6 +77,23 @@ class Flatten:
 
     @staticmethod
     def flatten(df: DataFrame, root_node:FlattenTree, rename_columns:Optional[bool] = True, filter_null_rows:Optional[bool] = True) -> DataFrame:
+        """
+        Flattens the dataframe based on the configuration which has to be imported upfrant as FlattenTree (see TreeManager).
+        When rename_colums is False, the names of columns will be the complete path to field.
+        If fi
+
+        Parameters
+        ----------
+        df : DataFrame
+            DataFrame to be flattened
+        root_node : FlattenTree
+            Root node of the FlattenTree
+        rename_columns : bool, optional
+            should the columns be renamed after flattening - either to the field-name or the alias
+        filter_null_rows : bool, optional
+            When a row only exist of null values besides the field marked as identifiers in config, the row will be filtered
+            Rows where only key fields are filled should almost be irrelevant
+        """
         # Get tree layered for flatten method
         layered_tree = root_node.get_tree_layered()
 
@@ -86,7 +110,7 @@ class Flatten:
         # Filter out rows where all non-identifiers (non-keyfields) are null
         if filter_null_rows:
             df = Flatten._filter_null_rows(df, root_node, rename_columns)
-        
+
         return df
 
     @staticmethod
@@ -103,7 +127,7 @@ class Flatten:
             # Count how many split characters are in column name step over when column not on same level
             if field.name.count(Flatten.SPLIT_CHAR) != index:
                 continue
-            
+
             if isinstance(field.dataType, ArrayType):
                 array_fields.append(field)
             elif isinstance(field.dataType, StructType):
@@ -120,8 +144,8 @@ class Flatten:
                 path_to_node = node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
                 if path_to_node == column_name:
                     # When column was found, explode array
-                    df_temp = df.withColumn(column_name, explode_outer(col(column_name)))
-                        
+                    df = df.withColumn(column_name, explode_outer(col(column_name)))
+
         # Second select all relevant fields within StrucType on this level
         for field in struct_fields:
             column_name = field.name
@@ -149,7 +173,7 @@ class Flatten:
 
                     df = Flatten._flatten(df_temp2, tree_layered, index+1)
 
-        # Third sanity check for 
+        # Third sanity check for leaf fields
         for field in other_fields:
             column_name = field.name
 

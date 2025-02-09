@@ -5,7 +5,8 @@ import json
 import os
 from pyspark.sql.types import StructType, ArrayType, StructField, StringType, IntegerType, FloatType, BooleanType, DoubleType, LongType, ShortType, ByteType, DateType, TimestampType, DecimalType, BinaryType, NullType, DataType
 
-BASIC_SPARK_TYPES = TypeVar(IntegerType,
+BASIC_SPARK_TYPES = TypeVar(StringType,  # pylint: disable=C0103
+                            IntegerType,
                             FloatType,
                             BooleanType,
                             DoubleType,
@@ -140,7 +141,7 @@ class Tree:
             # Only add child when not already done
             self._children.append(node)
         # Also check if the parent is already set.
-        if node._parent is None:
+        if node.get_parent() is None:
             node.set_parent(self)
 
     def get_parent(self) -> Union["Tree", None]:
@@ -229,7 +230,7 @@ class Tree:
         """
         # Make sure to start from root
         root = self.get_root()
-        return root._get_leafs(root)
+        return self._get_leafs(root)
 
     def get_leafs_as_paths(self) -> List[str]:
         """
@@ -434,7 +435,7 @@ class Tree:
         """
         if self._ancestors_list is not None:
             return self._ancestors_list
-        
+
         if self.get_parent() is None or self.get_parent().get_name() == "root":
             # root doesn't have ancestors
             # and first "real node" layer should not have root as ancestor because root is no "real" node
@@ -552,7 +553,7 @@ class FlattenTree(Tree):
         Union[str, None] : Alias of the node
         """
         return self.alias
-    
+
     def get_is_identifier(self) -> bool:
         """
         Returns True if node is identifier. Otherwise False
@@ -562,7 +563,7 @@ class FlattenTree(Tree):
         bool : Is the node identifier
         """
         return self.is_identifier
-    
+
     def is_child_wildcard(self) -> bool:
         """
         Checks if the (at least one) child of the node is a wildcard
@@ -573,7 +574,7 @@ class FlattenTree(Tree):
         bool
         """
         for child in self._children:
-            if child._name == "*":
+            if child.get_name() == "*":
                 return True
         return False
 
@@ -699,7 +700,7 @@ class SchemaTree(Tree):
             tree_list = self._get_tree_as_list(child, tree_list)
         return tree_list
 
-    def add_struct_type_to_tree(self, struct:StructType, parents:List[str] = []) -> None:
+    def add_struct_type_to_tree(self, struct:StructType, parents:List[str] = None) -> None:
         """
         Ingests a pyspark StructType as tree
 
@@ -731,12 +732,18 @@ class SchemaTree(Tree):
 
             # Add actual field to the list of parents and call the "sons"
             if isinstance(field.dataType, StructType):
-                list_of_parent_nodes = parents.copy()
+                if parents is None:
+                    list_of_parent_nodes = []
+                else:
+                    list_of_parent_nodes = parents.copy()
                 list_of_parent_nodes.append(field.name)
                 new_node.add_struct_type_to_tree(field.dataType, list_of_parent_nodes)
             elif isinstance(field.dataType, ArrayType) and isinstance(field.dataType.elementType, (StructType, StructField, ArrayType)):
                 # Only for above defined types an named layer follows
-                list_of_parent_nodes = parents.copy()
+                if parents is None:
+                    list_of_parent_nodes = []
+                else:
+                    list_of_parent_nodes = parents.copy()
                 list_of_parent_nodes.append(field.name)
                 new_node.add_struct_type_to_tree(field.dataType.elementType, list_of_parent_nodes)
 

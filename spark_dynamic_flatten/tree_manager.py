@@ -1,9 +1,9 @@
 """TreeManager is used to create Trees based on spark schema or for flattening based on flatten configuration."""
 
-from spark_dynamic_flatten.tree import Tree, FlattenTree, SchemaTree
 import os
 import json
-from pyspark.sql.types import StructType, ArrayType
+from pyspark.sql.types import StructType
+from spark_dynamic_flatten.tree import Tree, FlattenTree, SchemaTree
 
 class TreeManager:
     """
@@ -18,10 +18,24 @@ class TreeManager:
 
     Methods
     -------
+    add_path_to_tree()
+        Takes a path and âdds to the tree
     get_root_node()
         returns the root node of related tree
     print_tree()
         Prints the tree
+    from_struct_type() : static
+        Takes a spark schema as StructType and creates a SchemaTree
+    from_schema_json_string() : static
+        Takes a spark schema as json string and creates a SchemaTree
+    from_schema_json_file() : static
+        Takes a spark schema as json file and creates a SchemaTree
+    from_flatten_dict() : static
+        Takes a flatten config as dict and creates a FlattenTree
+    from_flatten_json_string() : static
+        Takes a flatten config as json string and creates a FlattenTree
+    from_flatten_json_file() : static
+        Takes a flatten config as json file and creates a FlattenTree
     """
     def __init__(self, tree_class = Tree):
         """
@@ -37,7 +51,7 @@ class TreeManager:
         # Create root instance of
         self.root = tree_class("root")
 
-    def _add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False) -> None:
+    def add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False) -> None:
         """
         Adds a path to tree and defines for leaf-node, if the leaf should be renmamed (aliased)
         and if it's an key-like value.
@@ -117,9 +131,9 @@ class TreeManager:
         assert file_path is not None
         if not os.path.isabs(file_path):
             file_path = os.path.abspath(file_path)
-        raw_file_path = r"{}".format(file_path)
+        raw_file_path = fr"{file_path}"
         # Open the file at the reference path and read its contents as a JSON string
-        with open(raw_file_path, "r") as f:
+        with open(raw_file_path, "r", encoding="utf-8") as f:
             # Parse the JSON string into a TreeManager and return it
             return TreeManager.from_schema_json_string(f.read())
 
@@ -138,7 +152,7 @@ class TreeManager:
 
         # Add path to TreeManager instance and let's build the tree
         for entity in json_dict["field_paths"]:
-            tm._add_path_to_tree(**entity)
+            tm.add_path_to_tree(**entity)
         return tm
 
     @staticmethod
@@ -169,8 +183,8 @@ class TreeManager:
         assert file_path is not None
         if not os.path.isabs(file_path):
             file_path = os.path.abspath(file_path)
-        raw_file_path = r"{}".format(file_path)
+        raw_file_path = fr"{file_path}"
         # Open the file at the reference path and read its contents as a JSON string
-        with open(raw_file_path, "r") as f:
+        with open(raw_file_path, "r", encoding="utf-8") as f:
             # Parse the JSON string into a TreeManager and return it
             return TreeManager.from_flatten_json_string(f.read())
