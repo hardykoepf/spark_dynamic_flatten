@@ -5,6 +5,7 @@ from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, explode_outer
 from pyspark.sql.types import ArrayType, StructType
 from spark_dynamic_flatten.tree import FlattenTree
+from spark_dynamic_flatten.tree_manager import TreeManager
 
 class Flatten:
     """
@@ -76,7 +77,7 @@ class Flatten:
             return df
 
     @staticmethod
-    def flatten(df: DataFrame, root_node:FlattenTree, rename_columns:Optional[bool] = True, filter_null_rows:Optional[bool] = True) -> DataFrame:
+    def flatten(df: DataFrame, tm:TreeManager, rename_columns:Optional[bool] = True, filter_null_rows:Optional[bool] = True) -> DataFrame:
         """
         Flattens the dataframe based on the configuration which has to be imported upfrant as FlattenTree (see TreeManager).
         When rename_colums is False, the names of columns will be the complete path to field.
@@ -86,14 +87,18 @@ class Flatten:
         ----------
         df : DataFrame
             DataFrame to be flattened
-        root_node : FlattenTree
-            Root node of the FlattenTree
+        tm : TreeManager
+            TreeManager instance with imported flattten configuration
         rename_columns : bool, optional
             should the columns be renamed after flattening - either to the field-name or the alias
         filter_null_rows : bool, optional
             When a row only exist of null values besides the field marked as identifiers in config, the row will be filtered
             Rows where only key fields are filled should almost be irrelevant
         """
+        # Make sure instance of TreeManager has FlattenTree as root node
+        assert isinstance(tm.get_root_node(), FlattenTree), "Root node has to be type of FlattenTree"
+        # Get root node of Tree
+        root_node = tm.get_root_node()
         # Get tree layered for flatten method
         layered_tree = root_node.get_tree_layered()
 
