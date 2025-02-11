@@ -51,7 +51,7 @@ class TreeManager:
         # Create root instance of
         self.root = tree_class("root")
 
-    def add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False) -> None:
+    def add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False) -> Tree:
         """
         Adds a path to tree and defines for leaf-node, if the leaf should be renmamed (aliased)
         and if it's an key-like value.
@@ -88,7 +88,7 @@ class TreeManager:
         return self.root
 
     @staticmethod
-    def from_struct_type(struct: StructType) -> "TreeManager":
+    def from_struct_type(struct: StructType) -> SchemaTree:
         """
         Creates a tree based on a pyspark StructType
 
@@ -103,10 +103,10 @@ class TreeManager:
         root = tm.get_root_node()
         # Call method to create tree based on StructType
         root.add_struct_type_to_tree(struct)
-        return tm
+        return root
 
     @staticmethod
-    def from_schema_json_string(schema: str) -> "TreeManager":
+    def from_schema_json_string(schema: str) -> SchemaTree:
         """
         Creates a tree based on a pyspark schema stored as Json string
 
@@ -119,7 +119,7 @@ class TreeManager:
         return TreeManager.from_struct_type(struct)
 
     @staticmethod
-    def from_schema_json_file(file_path: str) -> "TreeManager":
+    def from_schema_json_file(file_path: str) -> SchemaTree:
         """
         Creates a tree based on a pyspark schema file
 
@@ -138,7 +138,7 @@ class TreeManager:
             return TreeManager.from_schema_json_string(f.read())
 
     @staticmethod
-    def from_flatten_dict(json_dict: dict) -> "TreeManager":
+    def from_flatten_dict(json_dict: dict) -> FlattenTree:
         """
         Creates a tree based on a configuration dict for purpose of flatten a nested pyspark Dataframe.
 
@@ -153,10 +153,10 @@ class TreeManager:
         # Add path to TreeManager instance and let's build the tree
         for entity in json_dict["field_paths"]:
             tm.add_path_to_tree(**entity)
-        return tm
+        return tm.get_root_node()
 
     @staticmethod
-    def from_flatten_json_string(json_string: str) -> "TreeManager":
+    def from_flatten_json_string(json_string: str) -> FlattenTree:
         """
         Creates a tree based on a configuration Json string for purpose of flatten a nested pyspark Dataframe.
 
@@ -170,7 +170,7 @@ class TreeManager:
         return TreeManager.from_flatten_dict(json_dict)
 
     @staticmethod
-    def from_flatten_json_file(file_path: str) -> "TreeManager":
+    def from_flatten_json_file(file_path: str) -> FlattenTree:
         """
         Creates a tree based on a Json file for purpose of flatten a nested pyspark Dataframe.
 
