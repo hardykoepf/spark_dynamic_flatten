@@ -84,8 +84,13 @@ class Tree:
         self._parent = parent
         self._ancestors_list = None
 
+        # When parent was supplied, the new node has to be of same type like parent 
+        if parent:
+            assert type(self) == type (parent), "Types of pytestparent has to be of same type."
+
         if children is not None:
             for child in children:
+                assert type(self) == type (child), "Types of child has to be of same type."
                 self.add_child(child)
 
     def __repr__(self):
@@ -134,6 +139,7 @@ class Tree:
             Reference to the child node
         """
         assert isinstance(node, Tree), "Node has to be an instance of Tree"
+        assert type(self) == type (node), "Types of nodes has to be of same type."
         if node not in self._children:
             # Only add child when not already done
             self._children.append(node)
@@ -161,6 +167,7 @@ class Tree:
             Reference to the parent node
         """
         assert isinstance(node, Tree)
+        assert type(self) == type (node), "Types of nodes has to be of same type."
         assert self._parent is None
         self._parent = node
         node.add_child(self)

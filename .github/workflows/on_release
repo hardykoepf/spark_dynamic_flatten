@@ -1,0 +1,19 @@
+name: CI
+on:
+  workflow-dispatch:
+  push:
+    tags:
+      - '*.*.*'
+
+jobs:
+  test:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v2
+      - uses: actions/setup-python@v2
+      - name: Install Poetry
+        uses: snok/install-poetry@v1
+      - name: Install venv
+        run: poetry install
+      - name: Test
+        run: poetry run pytest

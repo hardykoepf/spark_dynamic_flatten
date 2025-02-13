@@ -99,7 +99,7 @@ from spark_dynamic_flatten.tree_manager import TreeManager
 from spark_dynamic_flatten.tree import FlattenTree
 from spark_dynamic_flatten.flatten import Flatten
 
-flatten = TreeManager.from_flatten_json_string(json_string).get_root()
-df_flattened = Flatten.flatten(df1, flatten)
+root_tree = TreeManager.from_flatten_json_string(json_string)
+df_flattened = Flatten.flatten(df1, root_tree)
 
 ```

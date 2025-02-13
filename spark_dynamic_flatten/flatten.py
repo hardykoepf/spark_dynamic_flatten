@@ -78,15 +78,16 @@ class Flatten:
     @staticmethod
     def flatten(df: DataFrame, root_node:FlattenTree, rename_columns:Optional[bool] = True, filter_null_rows:Optional[bool] = True) -> DataFrame:
         """
-        Flattens the dataframe based on the configuration which has to be imported upfrant as FlattenTree (see TreeManager).
+        Flattens the dataframe based on the configuration which has to be imported upfront as FlattenTree (see TreeManager).
         When rename_colums is False, the names of columns will be the complete path to field.
-        If fi
+        If filter_null_rows is set to true the dataframe after flattening will only have rows where at least one non-key field is not null.
+
 
         Parameters
         ----------
         df : DataFrame
             DataFrame to be flattened
-        tm : TreeManager
+        root_node : FlattenTree
             TreeManager instance with imported flattten configuration
         rename_columns : bool, optional
             should the columns be renamed after flattening - either to the field-name or the alias

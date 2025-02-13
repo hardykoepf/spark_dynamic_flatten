@@ -4,19 +4,9 @@ from spark_dynamic_flatten.tree_manager import TreeManager
 from .utils import relative_to_absolute
 
 @pytest.fixture
-def tm():
-    tm = TreeManager.from_schema_json_file(relative_to_absolute("data/formula1_schema.json"))
-    #tm.get_root_node().print_tree()
-    #print(tm.get_root_node().get_tree_layered())
-    return tm
-
-
-@pytest.fixture
-def tm_root(tm):
-    return tm.get_root_node()
-
-def test_import(tm, tm_root):
-    assert tm is not None
+def tm_root():
+    root = TreeManager.from_schema_json_file(relative_to_absolute("data/formula1_schema.json"))
+    return root
 
 def test_get_children(tm_root):
     children = tm_root.get_children()
@@ -47,6 +37,6 @@ def write_flatten_json(tm_root):
     tm_root.save_fully_flattened_json("test/data/", "formula1_flatten.json")
 
 def test_flatten(write_flatten_json):
-    tm = TreeManager.from_flatten_json_file("test/data/formula1_flatten.json")
+    root = TreeManager.from_flatten_json_file("test/data/formula1_flatten.json")
     # TreeManager imports the file again as tree. So children of root node has again to be 2 (season, teams)
-    assert len(tm.get_root_node().get_children()) == 2
+    assert len(root.get_children()) == 2
