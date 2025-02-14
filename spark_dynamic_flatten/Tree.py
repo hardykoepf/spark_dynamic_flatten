@@ -544,9 +544,17 @@ class FlattenTree(Tree):
         # Call Constructor of super class
         super().__init__(name, parent, children)
         # alias needed for Flattening
-        self.alias = alias
+        self._alias = alias
         # is_identifier needed for Flattening
-        self.is_identifier = is_identifier
+        self._is_identifier = is_identifier
+
+    def __repr__(self):
+        if self._name == "root":
+            # Root has no alias and is_identifier
+            rep = self._name
+        else:
+            rep = f"{self._name} : {self._alias} - {self._is_identifier}"
+        return repr(rep)
 
     def get_alias(self) -> Union[str, None]:
         """
@@ -556,7 +564,7 @@ class FlattenTree(Tree):
         ----------
         Union[str, None] : Alias of the node
         """
-        return self.alias
+        return self._alias
 
     def get_is_identifier(self) -> bool:
         """
@@ -566,7 +574,7 @@ class FlattenTree(Tree):
         ----------
         bool : Is the node identifier
         """
-        return self.is_identifier
+        return self._is_identifier
 
     def is_child_wildcard(self) -> bool:
         """

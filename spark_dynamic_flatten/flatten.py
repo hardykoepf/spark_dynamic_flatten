@@ -61,7 +61,8 @@ class Flatten:
         for leaf in leafs:
             if not leaf.get_is_identifier():
                 if rename_columns:
-                    column_name = leaf.get_name()
+                    # Use alias as column_name when alias is set. Otherwise use name of node
+                    column_name = leaf.get_alias() if leaf.get_alias() else leaf.get_name()
                 else:
                     column_name = leaf.get_path_to_node()
 
@@ -147,6 +148,9 @@ class Flatten:
             for node in tree_layered[index]:
                 path_to_node = node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
                 if path_to_node == column_name:
+                    # When array has StructType as elementType, add to struct_fields
+                    if isinstance(field.dataType.elementType, StructType):
+                        struct_fields.append(field)
                     # When column was found, explode array
                     df = df.withColumn(column_name, explode_outer(col(column_name)))
 
