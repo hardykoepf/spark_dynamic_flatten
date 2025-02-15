@@ -32,6 +32,27 @@ Also besides the trees, a TreeManager offers methods for creating a tree based o
 
 The flattening is executed within the Flatten class.
 
+### General tree functions
+
+The trees are defined to be self managed. This means there is no separation between a tree and node in implementation.
+
+To get a quick overview how the tree is looking like, the method print_tree() is printing the tree:
+```
+root_node_of_tree.print_tree()
+```
+
+If you need to have the tree as list, the function get_tree_as_list() will return a list with the complete path to every node.
+```
+root_node_of_tree.get_tree_as_list()
+```
+
+The method get_tree_layered() will return the tree as a nested list. Which means the layers are represented by a separate list with the nodes of this layer. The outer list keeps all the lists together.
+The list on index 0 from outer list holds the nodes of layer 1. On index 1 represents layer 2 and so on.
+[[nodes_layer_1], [nodes_layer_2], [nodes_layer_3], [nodes_layer_4], ...]
+```
+root_node_of_tree.get_tree_layered()
+```
+
 ## Usage
 
 Because two different use cases are implemented, we have to separate. But the use cases are related to each other.
