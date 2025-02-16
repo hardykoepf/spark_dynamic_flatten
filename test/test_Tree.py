@@ -3,7 +3,7 @@ from spark_dynamic_flatten import Tree
 
 @pytest.fixture
 def create_tree():
-    root = Tree("root")
+    root = Tree(name="root")
     previous = root
     for i in range(1,6):
         for j in range(1,i + 1):

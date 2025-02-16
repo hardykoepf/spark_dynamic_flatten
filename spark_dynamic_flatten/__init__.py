@@ -1,8 +1,11 @@
 import importlib.metadata
-# import submodules for easier import
-import spark_dynamic_flatten.flatten
-import spark_dynamic_flatten.tree
-import spark_dynamic_flatten.tree_manager
+
+# import submodules/classes for easier import
+from .flatten import Flatten
+from .tree import Tree
+from .tree import SchemaTree
+from .tree import FlattenTree
+from .tree_manager import TreeManager
 
 try:
     VERSION = importlib.metadata.version(__package__ or __name__)

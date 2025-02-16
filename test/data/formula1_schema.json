@@ -15,7 +15,7 @@
             "type": "struct",
             "fields": [
               {
-                "name": "team_name",
+                "name": "name",
                 "type": "string",
                 "nullable": true,
                 "metadata": {}

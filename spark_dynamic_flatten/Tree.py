@@ -769,10 +769,21 @@ class SchemaTree(Tree):
         """
         leafs = self.get_leafs()
         fields = []
+        dict_fieldnames = {}
         for leaf in leafs:
+            # When same name of leaf nodes exist multiple times in tree, we increment and add an alias
+            alias = None
+            if leaf.get_name() in dict_fieldnames:
+                n = dict_fieldnames[leaf.get_name()]
+                n = n + 1
+                dict_fieldnames[leaf.get_name()] = n
+                alias = f"{leaf.get_name()}#{n}"
+            else:
+                dict_fieldnames[leaf.get_name()] = 1
+
             fields.append({"path": leaf.get_path_to_node("."),
                            "is_identifier": False,
-                           "alias": None})
+                           "alias": alias})
         # Embed List in dict-key field-paths which is entry point for creating a TreeFlatten
         return {"field_paths": fields}
 

@@ -2,7 +2,7 @@
     "season": 2023,
     "teams": [
       {
-        "team_name": "Mercedes",
+        "name": "Mercedes",
         "drivers": [
           {
             "driver_id": 1,
@@ -85,7 +85,7 @@
         ]
       },
       {
-        "team_name": "Red Bull Racing",
+        "name": "Red Bull Racing",
         "drivers": [
           {
             "driver_id": 3,
