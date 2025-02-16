@@ -19,6 +19,5 @@ tree_flatten = TreeManager.from_flatten_dict(flatten_config)
 # Print tree
 tree_flatten.print_tree()
 
-# When spark cluster is available and dataframe with formula1 data is loaded
-# The dataframe could be flattened like this:
+# Example of flattening a dataframe (uncomment when spark cluster is available)
 # df_flattened = Flatten.flatten(dataframe, tree_flatten)
