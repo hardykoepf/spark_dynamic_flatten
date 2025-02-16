@@ -1,6 +1,6 @@
 import json
 import pytest
-from spark_dynamic_flatten.tree_manager import TreeManager
+from spark_dynamic_flatten import TreeManager
 from .utils import relative_to_absolute
 
 @pytest.fixture

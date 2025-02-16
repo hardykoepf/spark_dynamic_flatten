@@ -72,7 +72,7 @@ For Schemas, the nodes are instances of SchemaTree class.
 A helpful function comes with SchemaTree is to compare schemas of two PySpark dataframes, you can use the equals function.
 
 ```
-from spark_dynamic_flatten.tree_manager import TreeManager
+from spark_dynamic_flatten import TreeManager
 
 tree_schema1 = TreeManager.from_struct_type(df1.schema)
 tree_schema2 = TreeManager.from_struct_type(df2.schema)
@@ -85,7 +85,7 @@ equals, differences = tree_schema1.equals(tree_schema2)
 After parsing the schema of dataframe to a tree object, we generate the json config we can use for completely flatten the dataframe (or modify if we only need specific fields flattened).
 
 ```
-from spark_dynamic_flatten.tree_manager import TreeManager
+from spark_dynamic_flatten import TreeManager
 
 tree_schema1 = TreeManager.from_struct_type(df1.schema)
 json_string = tree_schema1.generate_fully_flattened_json()
@@ -120,9 +120,9 @@ To import the configuration, you have the option to have it as json file, json s
 - TreeManager.from_flatten_json_file(json_file) -> FlattenTree
 
 ```
-from spark_dynamic_flatten.tree_manager import TreeManager
-from spark_dynamic_flatten.tree import FlattenTree
-from spark_dynamic_flatten.flatten import Flatten
+from spark_dynamic_flatten import TreeManager
+from spark_dynamic_flatten import FlattenTree
+from spark_dynamic_flatten import Flatten
 
 root_tree = TreeManager.from_flatten_json_string(json_string)
 df_flattened = Flatten.flatten(df1, root_tree)
