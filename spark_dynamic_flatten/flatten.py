@@ -17,6 +17,8 @@ class Flatten:
     """
     # Constant Charater used for divide path. E.g field1#field12#field123
     SPLIT_CHAR = "#"
+    # Constant Character for wildcard
+    WILDCARD_CHAR = "*"
 
     @staticmethod
     def _select_to_rename(df:DataFrame, map_list:List[Tuple]) -> DataFrame:
@@ -31,6 +33,11 @@ class Flatten:
         list_of_alias = []
         duplicates = []
         for leaf in leafs:
+            if leaf.get_name() == Flatten.WILDCARD_CHAR:
+                # Wildcard is placeholder to explode array with element type. Has to be ignored for renaming
+                # thats why parent of this leaf is the truth and set as leaf
+                leaf = leaf.get_parent()
+
             path_of_leaf = leaf.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
             if leaf.get_alias() is None:
                 rename_to = leaf.get_name()
@@ -60,6 +67,10 @@ class Flatten:
         condition = None
         for leaf in leafs:
             if not leaf.get_is_identifier():
+                if leaf.name() == Flatten.WILDCARD_CHAR:
+                    # Wildcard is placeholder to explode array with element type. Has to be ignored for filtering
+                    # thats why parent of this leaf is the truth and set as leaf
+                    leaf = leaf.get_parent()
                 if rename_columns:
                     # Use alias as column_name when alias is set. Otherwise use name of node
                     column_name = leaf.get_alias() if leaf.get_alias() else leaf.get_name()
@@ -148,6 +159,9 @@ class Flatten:
             for node in tree_layered[index]:
                 path_to_node = node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
                 if path_to_node == column_name:
+                    if node.is_leaf():
+                        # When the path to array is leaf, we leave it as array
+                        continue
                     # When array has StructType as elementType, add to struct_fields
                     if isinstance(field.dataType.elementType, StructType):
                         struct_fields.append(field)

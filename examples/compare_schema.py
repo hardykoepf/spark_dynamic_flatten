@@ -13,6 +13,11 @@ if equal is False:
 else:
     print("Trees are equal")
 
+tree_schema1.print_tree()
+
+print(tree_schema1.generate_fully_flattened_struct())
+
+
 # Generate flatten config from schema1
 flatten_config = tree_schema1.generate_fully_flattened_paths()
 tree_flatten = TreeManager.from_flatten_dict(flatten_config)

@@ -1,5 +1,6 @@
 import json
 import pytest
+from pyspark.sql.types import IntegerType
 from spark_dynamic_flatten import TreeManager
 from .utils import relative_to_absolute
 
@@ -26,7 +27,7 @@ def test_get_tree_layered(tm_root):
 def test_get_tree_as_list(tm_root):
     tree_list = tm_root.get_tree_as_list()
     assert len(tree_list) == 15
-    assert tree_list[0] == ('season', 'integer', True, None, None)
+    assert tree_list[0] == ('season', IntegerType(), True, None, None)
 
 def test_generate_fully_flattened_paths(tm_root):
     tree_dict = tm_root.generate_fully_flattened_paths()
@@ -40,3 +41,7 @@ def test_flatten(write_flatten_json):
     root = TreeManager.from_flatten_json_file("test/data/formula1_flatten.json")
     # TreeManager imports the file again as tree. So children of root node has again to be 2 (season, teams)
     assert len(root.get_children()) == 2
+
+def test_flatten_struct(tm_root):
+    tree_struct = tm_root.generate_fully_flattened_struct()
+    assert len(tree_struct.fieldNames()) == 11

@@ -64,6 +64,9 @@ class Tree:
         Returns the path to one specific node. Separator can be choosen.
     """
 
+    # Constant Character for wildcard
+    WILDCARD_CHAR = "*"
+
     def __init__(self,
                  name:str = 'root',
                  parent:Optional['Tree'] = None,
@@ -410,12 +413,14 @@ class Tree:
 
     def _print_tree(self, node:"Tree", layer:int = 0):
         layer_int = layer
-        count = 0
+        count = 1
         output = ""
         while count < layer_int:
             output = output + "|   "
             count = count + 1
-        if count == layer_int:
+        if layer_int == 0:
+            print(repr(node))
+        elif count == layer_int:
             print(f"{output}|-- {repr(node)}")
         for child in node.get_children():
             self._print_tree(child, layer_int+1)
@@ -556,6 +561,16 @@ class FlattenTree(Tree):
             rep = f"{self._name} : {self._alias} - {self._is_identifier}"
         return repr(rep)
 
+    def set_alias(self, alias:str) -> None:
+        """
+        Set the alias of the node
+
+        Parameter
+        ----------
+        alias : Alias of the node
+        """
+        self._alias = alias
+
     def get_alias(self) -> Union[str, None]:
         """
         Returns the alias of the node
@@ -565,6 +580,16 @@ class FlattenTree(Tree):
         Union[str, None] : Alias of the node
         """
         return self._alias
+
+    def set_is_identifier(self, is_identifier:bool) -> None:
+        """
+        Set True if node is identifier. Otherwise False
+
+        Parameter
+        ----------
+        is_identifier : Is the node identifier
+        """
+        self._is_identifier = is_identifier
 
     def get_is_identifier(self) -> bool:
         """
@@ -579,14 +604,14 @@ class FlattenTree(Tree):
     def is_child_wildcard(self) -> bool:
         """
         Checks if the (at least one) child of the node is a wildcard
-        (node-name: *)
+        (node-name= Wildcard)
 
         Returning
         ----------
         bool
         """
         for child in self._children:
-            if child.get_name() == "*":
+            if child.get_name() == Tree.WILDCARD_CHAR:
                 return True
         return False
 
@@ -615,6 +640,10 @@ class FlattenTree(Tree):
                 if missing_node == missing_path[-1]:
                     # This is a leaf - so we have to add also the alias to the leaf
                     new_node = FlattenTree(missing_node, parent = nearest_node, alias = alias, is_identifier = is_identifier)
+                    if missing_node == Tree.WILDCARD_CHAR:
+                        # When name of leaf-node is Wildcard, this is a special case and details has to be inherited to parent
+                        nearest_node.set_alias(alias)
+                        nearest_node.set_is_identifier(is_identifier)
                 else:
                     new_node = FlattenTree(missing_node, parent = nearest_node)
                 nearest_node.add_child(new_node)
@@ -645,6 +674,7 @@ class SchemaTree(Tree):
                  name:str = 'root',
                  data_type = None,
                  nullable:bool = True,
+                 metadata:dict = None,
                  element_type:Optional[BASIC_SPARK_TYPES] = None,
                  contains_null:Optional[bool] = None,
                  parent:Optional['Tree'] = None,
@@ -657,13 +687,14 @@ class SchemaTree(Tree):
         self.nullable = nullable
         self.element_type = element_type
         self.contains_null = contains_null
+        self.metadata = metadata
 
     def __repr__(self):
         if self._name == "root":
             # Root has no data_type
             rep = self._name
         else:
-            rep = f"{self._name} : {self.data_type}"
+            rep = f"{self._name} : {self.data_type} - {self.nullable} - {self.element_type} - {self.contains_null}"
         return repr(rep)
 
     def get_data_type(self):
@@ -677,6 +708,12 @@ class SchemaTree(Tree):
         Returns the nullable setting of the node
         """
         return self.nullable
+    
+    def get_metadata(self) -> dict:
+        """
+        Returns the metadata setting of the node
+        """
+        return self.metadata
 
     def get_element_type(self):
         """
@@ -695,6 +732,8 @@ class SchemaTree(Tree):
         Returns the tree as list with tuples. Every single node is one list entity.
         The tuples contain the path to the node, data type, nullable, element type and contains null.
         Mainly needed for comparing trees.
+        But be aware, that for SchemaTrees mybe existing matadata is not included in the list and
+        also for comparing SchemaTrees!
 
         Returns
         ----------
@@ -723,7 +762,10 @@ class SchemaTree(Tree):
         parents : list[str]
             A list with the ordered predecessor nodes
         """
-        # Search the parent node when parents are not empty (first iteration)
+        # Make sure to start from root-node. When parents are None -> first iteration
+        if not parents:
+            assert self._name == "root", "This method has to be called on root-node instance!"
+
         if self._name == "root":
             node = self
         else:
@@ -734,10 +776,10 @@ class SchemaTree(Tree):
             # Special case for arrays with elementType different to Field, Struct or Array
             if isinstance(field.dataType, ArrayType) and not isinstance(field.dataType.elementType, (StructType, StructField, ArrayType)):
                 # Create a new node with element_type and contains_null
-                new_node = SchemaTree(name = field.name, data_type = field.dataType.typeName(), nullable = field.nullable, element_type = field.dataType.elementType, contains_null = field.dataType.containsNull)
+                new_node = SchemaTree(name = field.name, data_type = field.dataType, nullable = field.nullable, metadata = field.metadata, element_type = field.dataType.elementType, contains_null = field.dataType.containsNull)
             else:
                 # Create a new node without element_type and contains_null
-                new_node = SchemaTree(name = field.name, data_type = field.dataType.typeName(), nullable = field.nullable)
+                new_node = SchemaTree(name = field.name, data_type = field.dataType, nullable = field.nullable, metadata = field.metadata)
 
             # Add me as parent of newly created child
             new_node.set_parent(node)
@@ -781,9 +823,16 @@ class SchemaTree(Tree):
             else:
                 dict_fieldnames[leaf.get_name()] = 1
 
-            fields.append({"path": leaf.get_path_to_node("."),
+            if leaf.get_element_type():
+                # When leaf is array (only arrays can have element types), we have to append
+                # a ".*" so that this array will also be exploded in flattening
+                fields.append({"path": {leaf.get_path_to_node(".")} + "." + Tree.WILDCARD_CHAR,
                            "is_identifier": False,
                            "alias": alias})
+            else:
+                fields.append({"path": leaf.get_path_to_node("."),
+                            "is_identifier": False,
+                            "alias": alias})
         # Embed List in dict-key field-paths which is entry point for creating a TreeFlatten
         return {"field_paths": fields}
 
@@ -817,3 +866,35 @@ class SchemaTree(Tree):
         with open(raw_file_path, "w", encoding="utf-8") as file:
             file.write(json_str)
         print(f"File {file_path} was sucessfully written.")
+
+    def generate_fully_flattened_struct(self) -> StructType:
+        """
+        Generates a spark StrucType which only contains leaf-nodes of tree.
+        Can be used as schema for a fully flattened dataframe
+
+        Returning
+        ----------
+        StructType: Spark schema with every leaf-path
+        """
+        leafs = self.get_leafs()
+        fields = []
+        dict_fieldnames = {}
+        for leaf in leafs:
+            # When same name of leaf nodes exist multiple times in tree, we increment and add an alias
+            new_name = None
+            if leaf.get_name() in dict_fieldnames:
+                n = dict_fieldnames[leaf.get_name()]
+                n = n + 1
+                dict_fieldnames[leaf.get_name()] = n
+                new_name = f"{leaf.get_name()}#{n}"
+            else:
+                new_name = leaf.get_name()
+                dict_fieldnames[leaf.get_name()] = 1
+
+            if leaf.get_data_type() == ArrayType:
+                # When leaf is an array, the element type of array is used
+                fields.append(StructField(new_name, leaf.get_element_type(), leaf.get_contains_null(), leaf.get_metadata()))
+            else:
+                fields.append(StructField(new_name, leaf.get_data_type(), leaf.get_nullable(), leaf.get_metadata()))
+        # Embed List in dict-key field-paths which is entry point for creating a TreeFlatten
+        return StructType(fields)
