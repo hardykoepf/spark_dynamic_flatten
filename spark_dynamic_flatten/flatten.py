@@ -67,7 +67,7 @@ class Flatten:
         condition = None
         for leaf in leafs:
             if not leaf.get_is_identifier():
-                if leaf.name() == Flatten.WILDCARD_CHAR:
+                if leaf.get_name() == Flatten.WILDCARD_CHAR:
                     # Wildcard is placeholder to explode array with element type. Has to be ignored for filtering
                     # thats why parent of this leaf is the truth and set as leaf
                     leaf = leaf.get_parent()
