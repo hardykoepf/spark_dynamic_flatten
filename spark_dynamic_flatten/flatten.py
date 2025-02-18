@@ -134,7 +134,7 @@ class Flatten:
         # get fields from dataframe
         fields = df.schema.fields
 
-        # Divide fields on this level based on dataType
+        # Prepare worklists for this level based on dataType
         array_fields = []
         struct_fields = []
         other_fields = []
@@ -144,67 +144,58 @@ class Flatten:
             if field.name.count(Flatten.SPLIT_CHAR) != index:
                 continue
 
-            if isinstance(field.dataType, ArrayType):
-                array_fields.append(field)
-            elif isinstance(field.dataType, StructType):
-                struct_fields.append(field)
-            else:
-                other_fields.append(field)
+            for node in tree_layered[index]:
+                path_to_node = node.get_path_to_node(split_char=Flatten.SPLIT_CHAR)
+                if isinstance(field.dataType, ArrayType):
+                    array_fields.append((field, node))
+                elif isinstance(field.dataType, StructType):
+                    struct_fields.append((field, node))
+                else:
+                    other_fields.append((field, node))
 
         # First explode all relevant arrays on this level
-        for field in array_fields:
+        for field, node in array_fields:
             column_name = field.name
-
-            # If column is relevant read list of columns for actual index
-            for node in tree_layered[index]:
-                path_to_node = node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
-                if path_to_node == column_name:
-                    if node.is_leaf():
-                        # When the path to array is leaf, we leave it as array
-                        continue
-                    # When array has StructType as elementType, add to struct_fields
-                    if isinstance(field.dataType.elementType, StructType):
-                        struct_fields.append(field)
-                    # When column was found, explode array
-                    df = df.withColumn(column_name, explode_outer(col(column_name)))
+            if node.is_leaf():
+                # When the path to array is leaf, we leave it as array
+                continue
+            # When array has StructType as elementType, add to struct_fields
+            if isinstance(field.dataType.elementType, StructType):
+                struct_fields.append((field, node))
+            # When column was found, explode array
+            df = df.withColumn(column_name, explode_outer(col(column_name)))
 
         # Second select all relevant fields within StrucType on this level
-        for field in struct_fields:
+        for field, node in struct_fields:
             column_name = field.name
+            path_to_node = node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
 
-            # If column is relevant read list of columns for actual index
-            for node in tree_layered[index]:
-                path_to_node = node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
-                if path_to_node == column_name:
-                    # Read columns of next level temporarily
-                    df_upcoming_cols = df.select(f"{column_name}.*")
-                    upcoming_cols = df_upcoming_cols.columns
+            # Read columns of next level temporarily
+            df_upcoming_cols = df.select(f"{column_name}.*")
+            upcoming_cols = df_upcoming_cols.columns
 
-                    # Check that every children is found on next Level and select them
-                    # Build list of relevant children
-                    relevant_children = [child.get_name() for child in node.get_children()]
+            # Check that every children is found on next Level and select them
+            # Build list of relevant children
+            relevant_children = [child.get_name() for child in node.get_children()]
 
-                    # Check if every configured field exists in schema - Otherwise ERROR
-                    for child in relevant_children:
-                        if child not in upcoming_cols:
-                            raise ValueError(f"Field {child} could not be found in data path {path_to_node}")
-                    map_alias = [(column_name, child, f"{path_to_node}{Flatten.SPLIT_CHAR}{child}") for child in relevant_children]
+            # Check if every configured field exists in schema - Otherwise ERROR
+            for child in relevant_children:
+                if child not in upcoming_cols:
+                    raise ValueError(f"Field {child} could not be found in data path {path_to_node}")
+            map_alias = [(column_name, child, f"{path_to_node}{Flatten.SPLIT_CHAR}{child}") for child in relevant_children]
 
-                    df_temp1 = Flatten._select_structtype(df, map_alias)
-                    df_temp2 = df_temp1.drop(col(column_name))
+            df_temp1 = Flatten._select_structtype(df, map_alias)
+            df_temp2 = df_temp1.drop(col(column_name))
 
-                    df = Flatten._flatten(df_temp2, tree_layered, index+1)
+            df = Flatten._flatten(df_temp2, tree_layered, index+1)
 
         # Third sanity check for leaf fields
-        for field in other_fields:
+        for field, node in other_fields:
             column_name = field.name
+            path_to_node = node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
 
-            # If column is relevant read list of columns for actual index
-            for node in tree_layered[index]:
-                path_to_node = node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
-                if path_to_node == column_name:
+            # We are at the end of path - make sanity checks
+            assert len(node.get_children()) == 0, f"There is no more layer to flatten. Check config for path {node.get_path_to_node(Flatten.SPLIT_CHAR)}"
 
-                    # We are at the end of path - make sanity checks
-                    assert len(node.get_children()) == 0, f"There is no more layer to flatten. Check config for path {node.get_path_to_node(Flatten.SPLIT_CHAR)}"
         # When finished for this layer, return
         return df

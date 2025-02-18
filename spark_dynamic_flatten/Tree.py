@@ -3,7 +3,7 @@
 from typing import List, Tuple, Optional, TypeVar, Union
 import json
 import os
-from pyspark.sql.types import StructType, ArrayType, StructField, StringType, IntegerType, FloatType, BooleanType, DoubleType, LongType, ShortType, ByteType, DateType, TimestampType, DecimalType, BinaryType, NullType, DataType
+from pyspark.sql.types import StructType, ArrayType, StructField, StringType, IntegerType, FloatType, BooleanType, DoubleType, LongType, ShortType, ByteType, DateType, TimestampType, DecimalType, BinaryType, NullType, DataType, MapType
 
 BASIC_SPARK_TYPES = TypeVar(StringType,  # pylint: disable=C0103
                             IntegerType,
@@ -20,6 +20,34 @@ BASIC_SPARK_TYPES = TypeVar(StringType,  # pylint: disable=C0103
                             NullType,
                             DataType
                             )
+
+def get_pyspark_sql_type(typename: str) -> DataType:
+    type_mapping = {
+        "string": StringType,
+        "integer": IntegerType,
+        "float": FloatType,
+        "boolean": BooleanType,
+        "double": DoubleType,
+        "long": LongType,
+        "short": ShortType,
+        "byte": ByteType,
+        "date": DateType,
+        "timestamp": TimestampType,
+        "decimal": DecimalType,
+        "binary": BinaryType,
+        "null": NullType,
+        "map": MapType,
+    }
+    if typename in type_mapping:
+        return type_mapping[typename]()
+    else:
+        raise ValueError(f"Unsupported type name: {typename}")
+
+# Example usage
+# print(get_pyspark_sql_type("string"))  # Output: StringType()
+# print(get_pyspark_sql_type("integer"))  # Output: IntegerType()
+
+
 
 class Tree:
     """
@@ -677,6 +705,8 @@ class SchemaTree(Tree):
                  metadata:dict = None,
                  element_type:Optional[BASIC_SPARK_TYPES] = None,
                  contains_null:Optional[bool] = None,
+                 key_type:Optional[BASIC_SPARK_TYPES] = None,
+                 value_type:Optional[BASIC_SPARK_TYPES] = None,
                  parent:Optional['Tree'] = None,
                  children:Optional[List['Tree']] = None
                 ):
@@ -688,6 +718,8 @@ class SchemaTree(Tree):
         self.element_type = element_type
         self.contains_null = contains_null
         self.metadata = metadata
+        self.key_type = key_type
+        self.value_type = value_type
 
     def __repr__(self):
         if self._name == "root":
@@ -726,6 +758,18 @@ class SchemaTree(Tree):
         Returns the contains_null setting of element type of the node
         """
         return self.contains_null
+
+    def get_key_type(self):
+        """
+        Returns the key type of the node
+        """
+        return self.key_type
+
+    def get_value_type(self):
+        """
+        Returns the value type of the node
+        """
+        return self.value_type
 
     def _get_tree_as_list(self, node:"Tree", tree_list:List = None) -> List[Tuple]:
         """
@@ -776,10 +820,13 @@ class SchemaTree(Tree):
             # Special case for arrays with elementType different to Field, Struct or Array
             if isinstance(field.dataType, ArrayType) and not isinstance(field.dataType.elementType, (StructType, StructField, ArrayType)):
                 # Create a new node with element_type and contains_null
-                new_node = SchemaTree(name = field.name, data_type = field.dataType, nullable = field.nullable, metadata = field.metadata, element_type = field.dataType.elementType, contains_null = field.dataType.containsNull)
+                new_node = SchemaTree(name = field.name, data_type = field.dataType.typeName(), nullable = field.nullable, metadata = field.metadata, element_type = field.dataType.elementType.typeName(), contains_null = field.dataType.containsNull)
+            elif isinstance(field.dataType, MapType):
+                # Create a new node with element_type and contains_null
+                new_node = SchemaTree(name = field.name, data_type = field.dataType.typeName(), nullable = field.nullable, metadata = field.metadata, key_type = field.dataType.keyType.typeName(), value_type = field.dataType.valueType.typeName())
             else:
                 # Create a new node without element_type and contains_null
-                new_node = SchemaTree(name = field.name, data_type = field.dataType, nullable = field.nullable, metadata = field.metadata)
+                new_node = SchemaTree(name = field.name, data_type = field.dataType.typeName(), nullable = field.nullable, metadata = field.metadata)
 
             # Add me as parent of newly created child
             new_node.set_parent(node)
@@ -891,10 +938,13 @@ class SchemaTree(Tree):
                 new_name = leaf.get_name()
                 dict_fieldnames[leaf.get_name()] = 1
 
-            if leaf.get_data_type() == ArrayType:
+            if leaf.get_data_type() == "array":
                 # When leaf is an array, the element type of array is used
-                fields.append(StructField(new_name, leaf.get_element_type(), leaf.get_contains_null(), leaf.get_metadata()))
+                fields.append(StructField(new_name, ArrayType(get_pyspark_sql_type(leaf.get_element_type()), leaf.get_contains_null()), leaf.get_nullable(), leaf.get_metadata()))
+            elif leaf.get_data_type() == "map":
+                # When leaf is an array, the element type of array is used
+                fields.append(StructField(new_name, MapType(get_pyspark_sql_type(leaf.get_key_type()), get_pyspark_sql_type(leaf.get_value_type())), leaf.get_nullable(), leaf.get_metadata()))
             else:
-                fields.append(StructField(new_name, leaf.get_data_type(), leaf.get_nullable(), leaf.get_metadata()))
+                fields.append(StructField(new_name, get_pyspark_sql_type(leaf.get_data_type()), leaf.get_nullable(), leaf.get_metadata()))
         # Embed List in dict-key field-paths which is entry point for creating a TreeFlatten
         return StructType(fields)
