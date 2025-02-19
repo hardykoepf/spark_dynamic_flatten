@@ -91,6 +91,19 @@ tree_schema1 = TreeManager.from_struct_type(df1.schema)
 json_string = tree_schema1.generate_fully_flattened_json()
 ```
 
+#### Generate StructType of flattened dataframe
+
+When a deeply nested structure should be flattened, only the data on leaf-nodes will be represented in the result. So when you need to know the schema of flattened dataframe, you can generate with help of SchemaTree.
+But be aware: leaf nodes can have the same name on different branches.
+When there are "duplicates", these are incremented by the number after initial name.
+
+```
+from spark_dynamic_flatten import TreeManager
+
+tree_schema1 = TreeManager.from_struct_type(df1.schema)
+flat_schema = tree_schema1.generate_fully_flattened_struct()
+```
+
 ### Flatten
  
 The configuration for flatten a nested structure is defined by the path to the leaf fields separated by a dot.

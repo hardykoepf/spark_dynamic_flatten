@@ -51,7 +51,7 @@ def get_pyspark_sql_type(typename: str) -> DataType:
 
 class Tree:
     """
-    Generic Tree 
+    A generic Tree class for representing hierarchical data structures.
     Attributes
     ----------
     self._name : name of node
@@ -549,15 +549,6 @@ class FlattenTree(Tree):
     Tree for Flatten
     Inherited from Tree
 
-    Attributes
-    ----------
-    self.alias : Alias name of the node (only for leaf nodes)
-    self.is_identifier : Is node key (only for leaf nodes)
-
-    Methods
-    -------
-    add_path_to_tree()
-        Adds a path (pigeonhole) to the tree
     """
     def __init__(self,
                  name:str = 'root',
@@ -681,22 +672,10 @@ class FlattenTree(Tree):
 
 class SchemaTree(Tree):
     """
-    Tree for pyspark Schemas
-    Inherited from Tree
+    A class to represent a schema tree for PySpark dataframe schema.
 
-    Attributes
-    ----------
-    self.data_type : Data type of the node
-    self.nullable : Is the node nullable
-    self.element_type : Element type of the node
-    self.contains_null : When node has element type, if this can contain null
-
-    Methods
-    -------
-    TODO: Add all methods
-    
-    add_path_to_tree()
-        Adds a path (pigeonhole) to the tree
+    This class provides functionalities to construct, manipulate, and compare
+    hierarchical schema structures for PySpark dataframes.
     """
     def __init__(self,
                  name:str = 'root',

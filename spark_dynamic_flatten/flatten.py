@@ -8,12 +8,19 @@ from spark_dynamic_flatten.tree import FlattenTree
 
 class Flatten:
     """
-    This class provides logic for flatten a deeply nested dataframe based on configuration.
+    This class provides logic for flattening a deeply nested dataframe based on configuration.
+
+    Attributes
+    ----------
+    SPLIT_CHAR : str
+        Constant character used for dividing path. E.g., field1#field12#field123.
+    WILDCARD_CHAR : str
+        Constant character for wildcard.
 
     Methods
     -------
-    flatten()
-        returns a flattened dataframe
+    flatten(df: DataFrame, root_node: FlattenTree) -> DataFrame
+        Flattens a deeply nested dataframe based on the provided FlattenTree configuration.
     """
     # Constant Charater used for divide path. E.g field1#field12#field123
     SPLIT_CHAR = "#"
