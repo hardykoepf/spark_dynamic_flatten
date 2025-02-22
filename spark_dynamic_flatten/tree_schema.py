@@ -44,6 +44,9 @@ class SchemaTree(Tree):
         add_struct_type_to_tree(self, struct:StructType, parents:List[str] = None) -> None:
             Creates/adds a StructType to the tree
 
+        add_path_to_tree(self, path:str, data_type:str, nullable:bool = True, metadata:dict = None, element_type:str = None, contains_null:bool = None, key_type:str = None, value_type:str = None) -> None:
+            Adds a path separated by "." to tree  
+
         generate_fully_flattened_paths(self) -> dict:
             Flattens the tree to it's leaf-nodes and returns leafs as dict
 
@@ -57,10 +60,7 @@ class SchemaTree(Tree):
             Flattens the tree and returns it as spark schema StuctType
 
         subtract(self, other: 'SchemaTree') -> 'SchemaTree':
-            Subtracts another SchemaTree from this SchemaTree and returns the difference as a new SchemaTree.
-
-        add_path_to_tree(self, path:str, data_type:str, nullable:bool = True, metadata:dict = None, element_type:str = None, contains_null:bool = None, key_type:str = None, value_type:str = None) -> None:
-            Adds a path separated by "." to tree      
+            Subtracts another SchemaTree from this SchemaTree and returns the difference as a new SchemaTree.    
     """
 
     def __init__(self,
@@ -213,6 +213,38 @@ class SchemaTree(Tree):
                 list_of_parent_nodes.append(field.name)
                 new_node.add_struct_type_to_tree(field.dataType.elementType, list_of_parent_nodes)
 
+    def add_path_to_tree(self, path:str, data_type:str, nullable:bool = True, metadata:dict = None, element_type:str = None, contains_null:bool = None, key_type:str = None, value_type:str = None) -> None:
+        """
+        Adds a path (pigeonhole) to the tree. Overwrite method of super class.
+
+        Parameters
+        ----------
+        path : str
+            Path to be pigeonholed to the tree
+
+        """
+        # Split path
+        path_list = path.split(".")
+        # Search if the complete path is already existing.
+        # If not, we get back the last existing node and the missing part of path
+        nearest_node, missing_path = self.search_node_by_path(path_list)
+        if len(missing_path) > 0:
+            for missing_node in missing_path:
+                # Create new node
+                new_node = SchemaTree(missing_node,
+                                        parent = nearest_node,
+                                        data_type = data_type,
+                                        nullable = nullable,
+                                        metadata = metadata,
+                                        element_type = element_type,
+                                        contains_null = contains_null,
+                                        key_type = key_type,
+                                        value_type = value_type
+                                        )
+                nearest_node.add_child(new_node)
+                # For next iteration set "nearest_node" to actually created new_node
+                nearest_node = new_node
+
     def generate_fully_flattened_paths(self) -> dict:
         """
         Generates a field-path list which can be used as starting point for flattening configuration.
@@ -344,38 +376,6 @@ class SchemaTree(Tree):
             return self._tuples_to_tree(difference)
         else:
             return SchemaTree("root")
-
-    def add_path_to_tree(self, path:str, data_type:str, nullable:bool = True, metadata:dict = None, element_type:str = None, contains_null:bool = None, key_type:str = None, value_type:str = None) -> None:
-        """
-        Adds a path (pigeonhole) to the tree. Overwrite method of super class.
-
-        Parameters
-        ----------
-        path : str
-            Path to be pigeonholed to the tree
-
-        """
-        # Split path
-        path_list = path.split(".")
-        # Search if the complete path is already existing.
-        # If not, we get back the last existing node and the missing part of path
-        nearest_node, missing_path = self.search_node_by_path(path_list)
-        if len(missing_path) > 0:
-            for missing_node in missing_path:
-                # Create new node
-                new_node = SchemaTree(missing_node,
-                                        parent = nearest_node,
-                                        data_type = data_type,
-                                        nullable = nullable,
-                                        metadata = metadata,
-                                        element_type = element_type,
-                                        contains_null = contains_null,
-                                        key_type = key_type,
-                                        value_type = value_type
-                                        )
-                nearest_node.add_child(new_node)
-                # For next iteration set "nearest_node" to actually created new_node
-                nearest_node = new_node
 
     def _tree_to_tuples(self, node: 'SchemaTree') -> List[Tuple]:
         """

@@ -78,6 +78,7 @@ def test_flatten(write_flatten_json):
 
 def test_flatten_struct(tm_root):
     tree_struct = tm_root.generate_fully_flattened_struct()
+    # count fields of StructType 
     assert len(tree_struct.fieldNames()) == 11
 
 if __name__ == "__main__":

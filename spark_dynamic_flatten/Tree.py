@@ -319,19 +319,17 @@ class Tree:
             The bool returns True if trees are identically,
             the set returns differences (set will be empty when identical)
         """
-        if type(other) is type(self):
-            list_self = self.get_tree_as_list()
-            set_self = set(list_self)
-            list_other = other.get_tree_as_list()
-            set_other = set(list_other)
+        assert type(other) is type(self), f"Both trees has to be of same type. self: {type(self)} other: {type(other)}"
+        list_self = self.get_tree_as_list()
+        set_self = set(list_self)
+        list_other = other.get_tree_as_list()
+        set_other = set(list_other)
 
-            difference = set_self.symmetric_difference(set_other)
-            if len(difference) == 0:
-                return True, difference
-            else:
-                return False, difference
+        difference = set_self.symmetric_difference(set_other)
+        if len(difference) == 0:
+            return True, difference
         else:
-            return False, set("Type mismatch")
+            return False, difference
 
     def subtract(self, other:"Tree") -> Tuple[bool, set]:
         """
@@ -344,18 +342,12 @@ class Tree:
             The bool returns True if trees are identically,
             the set returns differences (set will be empty when identical)
         """
-        if type(other) is type(self):
-            list_self = self.get_tree_as_list()
-            set_self = set(list_self)
-            list_other = other.get_tree_as_list()
-            set_other = set(list_other)
-
-            subtract = set_self - set_other
-
-
-            return subtract
-        else:
-            raise TypeError("Type mismatch boh objects has to be of same class for subtract.")
+        assert type(other) is type(self), f"Both trees has to be of same type. self: {type(self)} other: {type(other)}"
+        list_self = self.get_tree_as_list()
+        set_self = set(list_self)
+        list_other = other.get_tree_as_list()
+        set_other = set(list_other)
+        return set_self - set_other
 
     def _search_node_by_name(self, node, name:str) -> Union["Tree",None]:
         if node.get_name() == name:
@@ -552,7 +544,6 @@ class Tree:
             else:
                 # first entry of list index - insert nested list
                 layer_list.append([node])
-
             layer = layer +1
 
         for child in node.get_children():
