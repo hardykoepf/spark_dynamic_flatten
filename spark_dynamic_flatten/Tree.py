@@ -566,6 +566,115 @@ class Tree:
         """
         root = self.get_root()
         return self._get_tree_layered(root)
+    
+    def subtract(self, other: 'SchemaTree') -> 'SchemaTree':
+        """
+        Subtracts another Tree from this Tree and returns the difference as a new Tree.
+        Also possible to subtract SchemaTree or FlattenTree object from this Tree.
+
+        Parameters
+        ----------
+        other : Tree
+            The other Tree to subtract from this one.
+
+        Returns
+        -------
+        Tree
+            A new Tree representing the difference.
+        """
+        if not isinstance(other, (Tree, SchemaTree, FlattenTree)):
+            raise TypeError("Type mismatch: other object has to be of Tree or inherited class")
+        elif not isinstance(other, Tree):
+            print("WARNING: Because trees are of different types, only basic attribute 'name' is taken into account.")
+
+        # Convert both trees to sets of tuples
+        set_self = set(self._tree_to_tuples(self))
+        set_other = set(self._tree_to_tuples(other))
+
+        # Calculate the difference
+        difference = set_self - set_other
+
+        # Convert the difference back to a SchemaTree
+        if difference:
+            return self._tuples_to_tree(difference)
+        else:
+            return SchemaTree("root")
+
+    def _tree_to_tuples(self, node: 'Tree') -> List[Tuple]:
+        """
+        Converts a Tree to a list of tuples representing the tree structure.
+
+        Parameters
+        ----------
+        node : Tree
+            The root-node of tree to convert.
+
+        Returns
+        -------
+        List[Tuple]
+            A list of tuples representing the tree structure.
+        """
+        if node.get_name() == "root":
+            tuples = []
+        else:
+            path = node.get_path_to_node(".")
+            tuples = [(path)]
+        
+        for child in node.get_children():
+            tuples.extend(self._tree_to_tuples(child))
+        return tuples
+
+    def _tuples_to_tree(self, tuples: List[Tuple]) -> 'Tree':
+        """
+        Converts a list of tuples back to a Tree.
+
+        Parameters
+        ----------
+        tuples : List[Tuple]
+            A list of tuples representing the tree structure.
+
+        Returns
+        -------
+        Tree
+            The reconstructed Tree.
+        """
+        if not tuples:
+            return None
+
+        # Create a root node
+        root = Tree("root")
+
+        # Add child nodes
+        for path in tuples:
+            root.add_path_to_tree(path = path)
+        return root
+
+    def to_tree(self) -> 'Tree':
+        """
+        Converts a FlattenTree or SchemaTree to basic Tree.
+
+        Parameters
+        ----------
+        node : SchemaTree or FlattenTree
+            The root-node of tree to convert.
+
+        Returns
+        -------
+        Tree
+            A tree of type Tree.
+        """
+        root_node = self.get_root()
+        new_tree = Tree("root")
+        
+        for child_orig in root_node.get_children():
+            self._to_tree(child_orig, new_tree)
+        return new_tree
+    
+    def _to_tree(self, node: Union['SchemaTree', 'FlattenTree'], parent: 'Tree' = None) -> 'Tree':
+        new_node = Tree(node.get_name())
+        new_node.set_parent(parent)
+        for child in node.get_children():
+            self._to_tree(child, new_node)
 
 
 class FlattenTree(Tree):
@@ -967,8 +1076,8 @@ class SchemaTree(Tree):
         SchemaTree
             A new SchemaTree representing the difference.
         """
-        if type(other) is not type(self):
-            raise TypeError("Type mismatch: both objects must be of the same class for subtraction.")
+        if not isinstance(other, SchemaTree):
+            raise TypeError("Type mismatch: both objects must be of type SchemaTree for subtraction.")
 
         # Convert both trees to sets of tuples
         set_self = set(self._tree_to_tuples(self))
@@ -983,7 +1092,7 @@ class SchemaTree(Tree):
         else:
             return SchemaTree("root")
 
-    def _add_path_to_tree(self, path:str, data_type, nullable, metadata, element_type, contains_null, key_type, value_type) -> None:
+    def add_path_to_tree(self, path:str, data_type:str, nullable:bool = True, metadata:dict = None, element_type:str = None, contains_null:bool = None, key_type:str = None, value_type:str = None) -> None:
         """
         Adds a path (pigeonhole) to the tree. Overwrite method of super class.
 
@@ -1022,9 +1131,7 @@ class SchemaTree(Tree):
         Parameters
         ----------
         node : SchemaTree
-            The node to convert.
-        parent_path : str
-            The path to the parent node.
+            The root-node of tree to convert.
 
         Returns
         -------
@@ -1063,7 +1170,7 @@ class SchemaTree(Tree):
 
         # Add child nodes
         for path, data_type, nullable, element_type, contains_null, key_type, value_type in tuples:
-            root._add_path_to_tree(path = path,
+            root.add_path_to_tree(path = path,
                                    data_type = data_type,
                                    nullable = nullable,
                                    metadata = {},

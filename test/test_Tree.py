@@ -99,3 +99,7 @@ def test_get_tree_layered(create_tree):
     layered = create_tree.get_tree_layered()
     assert len(layered) == 5
     assert len(layered[1]) == 2
+
+
+if __name__ == "__main__":
+    pytest.main([__file__,"-s"])

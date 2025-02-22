@@ -61,10 +61,11 @@ tree = TreeManager.from_struct_type(schema)
 tree.print_tree()
 tree2 = TreeManager.from_struct_type(schema2)
 tree2.print_tree()
+# Create a spark Schema which represents the tree after fully flattening
 print(tree.generate_fully_flattened_struct())
 
-print(tree._tree_to_tuples(tree))
-print(tree._tree_to_tuples(tree2))
-new = tree.subtract(tree2)
+# Subtract two trees to see differences as a new returned tree
+# Tree2 has one element (leaf) additional. So the newly generated tree after subtraction
+# has all nodes to the additional field
 new = tree2.subtract(tree)
 new.print_tree()

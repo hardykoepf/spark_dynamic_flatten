@@ -24,5 +24,8 @@ tree_flatten = TreeManager.from_flatten_dict(flatten_config)
 # Print tree
 tree_flatten.print_tree()
 
+tree = tree_flatten.to_tree()
+tree.print_tree()
+
 # Example of flattening a dataframe (uncomment when spark cluster is available)
 # df_flattened = Flatten.flatten(dataframe, tree_flatten)
