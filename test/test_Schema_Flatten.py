@@ -1,6 +1,4 @@
-import json
 import pytest
-from pyspark.sql.types import IntegerType, StructField
 from spark_dynamic_flatten import TreeManager, Tree, SchemaTree
 try:
     from .utils import relative_to_absolute

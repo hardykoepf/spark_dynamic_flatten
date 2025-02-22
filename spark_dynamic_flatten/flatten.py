@@ -4,7 +4,7 @@ from typing import Optional, Tuple, List
 from pyspark.sql import DataFrame
 from pyspark.sql.functions import col, explode_outer
 from pyspark.sql.types import ArrayType, StructType
-from spark_dynamic_flatten.tree import FlattenTree
+from spark_dynamic_flatten import FlattenTree
 
 class Flatten:
     """
