@@ -91,7 +91,13 @@ class SchemaTree(Tree):
             # Root has no data_type
             rep = self._name
         else:
-            rep = f"{self._name} : {self.data_type} - {self.nullable} - {self.element_type} - {self.contains_null}"
+            rep = f"{self._name} : {self.data_type}"
+            if self.nullable is not None:
+                rep = rep + f" (nullable = {self.nullable})"
+            if self.element_type is not None:
+                rep = rep + f" (element_type = {self.element_type})"
+            if self.contains_null is not None:
+                rep = rep + f" (contains_null = {self.contains_null})"
         return repr(rep)
 
     def get_data_type(self):

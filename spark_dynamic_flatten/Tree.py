@@ -89,7 +89,7 @@ class Tree:
         and the missing part of the path
     add_path_to_tree()
         Adds a path (pigeonhole) to the tree
-    print_tree()
+    print()
         Prints the tree
     build_ancestors_list()
         Builds the list of all ancestors for one specific node
@@ -474,7 +474,7 @@ class Tree:
         for child in node.get_children():
             self._print_tree(child, layer_int+1)
 
-    def print_tree(self):
+    def print(self):
         """
         Prints the tree
         """

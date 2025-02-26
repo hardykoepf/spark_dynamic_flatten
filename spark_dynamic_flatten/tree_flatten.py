@@ -63,11 +63,11 @@ class FlattenTree(Tree):
         self._is_identifier = is_identifier
 
     def __repr__(self):
-        if self._name == "root":
-            # Root has no alias and is_identifier
-            rep = self._name
-        else:
-            rep = f"{self._name} : {self._alias} - {self._is_identifier}"
+        rep = f"{self._name}"
+        if self._alias is not None:
+            rep = rep + f" (alias = {self._alias})"
+        if self._is_identifier is not None:
+            rep = rep + f" (is_identifier = {self._is_identifier})"
         return repr(rep)
 
     def set_alias(self, alias:str) -> None:

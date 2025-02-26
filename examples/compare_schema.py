@@ -13,7 +13,7 @@ if equal is False:
 else:
     print("Trees are equal")
 
-tree_schema1.print_tree()
+tree_schema1.print()
 
 print(tree_schema1.generate_fully_flattened_struct())
 
@@ -22,10 +22,10 @@ print(tree_schema1.generate_fully_flattened_struct())
 flatten_config = tree_schema1.generate_fully_flattened_paths()
 tree_flatten = TreeManager.from_flatten_dict(flatten_config)
 # Print tree
-tree_flatten.print_tree()
+tree_flatten.print()
 
 tree = tree_flatten.to_tree()
-tree.print_tree()
+tree.print()
 
 # Example of flattening a dataframe (uncomment when spark cluster is available)
 # df_flattened = Flatten.flatten(dataframe, tree_flatten)

@@ -53,6 +53,7 @@ def test_to_tree(tm_root):
     assert len(layered) == 5
 
 def test_subtract(tm_root, tm_root2):
+    tm_root.print()
     tm_root2.add_path_to_tree(
         path = "teams.drivers.nickname",
         data_type = "string",
