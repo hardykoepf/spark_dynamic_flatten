@@ -153,13 +153,16 @@ class Flatten:
 
             for node in tree_layered[index]:
                 path_to_node = node.get_path_to_node(split_char=Flatten.SPLIT_CHAR)
-                if isinstance(field.dataType, ArrayType):
-                    array_fields.append((field, node))
-                elif isinstance(field.dataType, StructType):
-                    struct_fields.append((field, node))
-                else:
-                    other_fields.append((field, node))
-
+                # Only take relevant fields into account
+                if field.name == path_to_node:
+                    if isinstance(field.dataType, ArrayType):
+                        array_fields.append((field, node))
+                    elif isinstance(field.dataType, StructType):
+                        struct_fields.append((field, node))
+                    else:
+                        other_fields.append((field, node))
+                    break
+            
         # First explode all relevant arrays on this level
         for field, node in array_fields:
             column_name = field.name

@@ -28,6 +28,19 @@ def create_dupl():
     return root
 
 @pytest.fixture
+def create_diff():
+    root = Tree("root")
+    previous = root
+    for i in range(1,7):
+        for j in range(1,i + 1):
+            node_name = f"node_{i}_{j}"
+            node = Tree(node_name, previous)
+            previous.add_child(node)
+
+        previous = node
+    return root
+
+@pytest.fixture
 def mid_node(create_tree):
     #Search node in middle of hierarchy with childrens
     return create_tree.search_node_by_name("node_3_3")
@@ -89,6 +102,14 @@ def test_equals(create_tree, create_dupl):
     result, _ = create_tree.equals(create_dupl)
     assert result == False
 
+def test_subtract(create_tree, create_dupl):
+    result = create_tree.subtract(create_dupl)
+    assert len(result) == 0
+    # Make changes to one tree
+    create_dupl.add_child(Tree("new"))
+    result = create_dupl.subtract(create_tree)
+    assert len(result) == 1
+
 def test_add_path_to_tree(create_tree):
     create_tree.add_path_to_tree("season.new_path")
 
@@ -99,6 +120,11 @@ def test_get_tree_layered(create_tree):
     layered = create_tree.get_tree_layered()
     assert len(layered) == 5
     assert len(layered[1]) == 2
+
+def test_hashable(create_tree):
+    list = create_tree.get_tree_as_list()
+    tree_set = set(list[2])
+    assert len(tree_set) == 8
 
 
 if __name__ == "__main__":

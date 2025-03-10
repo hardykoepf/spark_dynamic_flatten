@@ -134,6 +134,10 @@ class Tree:
 
     def __eq__(self, other) -> bool:
         return bool(repr(self) == repr(other))
+    
+    def __hash__(self):
+        print(id(self))
+        return hash(self.name, id(self), self.get_ancestors_list())
 
     def set_name(self, name:str):
         """
