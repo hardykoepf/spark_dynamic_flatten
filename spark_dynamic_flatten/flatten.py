@@ -162,7 +162,17 @@ class Flatten:
                     else:
                         other_fields.append((field, node))
                     break
-            
+
+        # Check if for every configured node on this level a corresponding field in dataframe
+        if len(tree_layered[index]) != (len(array_fields) + len(struct_fields) + len(other_fields)):
+            found_nodes = [x[1] for x in array_fields]
+            found_nodes.extend([x[1] for x in struct_fields])
+            found_nodes.extend([x[1] for x in other_fields])
+            found = set(found_nodes)
+            conf = set(tree_layered[index])
+            diff = found.difference(conf)
+            print(f"Not all configured nodes were found on layer {index}: {diff}")
+
         # First explode all relevant arrays on this level
         for field, node in array_fields:
             column_name = field.name

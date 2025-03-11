@@ -137,7 +137,7 @@ class Tree:
     
     def __hash__(self):
         print(id(self))
-        return hash(self.name, id(self), self.get_ancestors_list())
+        return hash(self._name, id(self), self.get_ancestors_list())
 
     def set_name(self, name:str):
         """
