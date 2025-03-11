@@ -122,9 +122,9 @@ def test_get_tree_layered(create_tree):
     assert len(layered[1]) == 2
 
 def test_hashable(create_tree):
-    list = create_tree.get_tree_as_list()
+    list = create_tree.get_tree_layered()
     tree_set = set(list[2])
-    assert len(tree_set) == 8
+    assert len(tree_set) == 3
 
 
 if __name__ == "__main__":

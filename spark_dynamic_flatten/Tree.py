@@ -84,8 +84,10 @@ class Tree:
         return bool(repr(self) == repr(other))
     
     def __hash__(self):
-        print(id(self))
-        return hash(self._name, id(self), self.get_ancestors_list())
+        return hash(self._key())
+    
+    def _key(self):
+        return (self._name, id(self), "".join(str(x) for x in self.get_ancestors_list()))
 
     def set_name(self, name:str):
         """
