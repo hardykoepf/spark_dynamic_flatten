@@ -137,7 +137,7 @@ class Flatten:
         return df
 
     @staticmethod
-    def _flatten(df: DataFrame, tree_layered:List[Optional[List[FlattenTree]]], index:int = 0) -> DataFrame:
+    def _flatten(df: DataFrame, tree_layered:List[Optional[List[FlattenTree]]], index:int = 0, sanity_check:bool = False) -> DataFrame:
         # get fields from dataframe
         fields = df.schema.fields
 
@@ -163,15 +163,16 @@ class Flatten:
                         other_fields.append((field, node))
                     break
 
-        # Check if for every configured node on this level a corresponding field in dataframe
-        if len(tree_layered[index]) != (len(array_fields) + len(struct_fields) + len(other_fields)):
-            found_nodes = [x[1] for x in array_fields]
-            found_nodes.extend([x[1] for x in struct_fields])
-            found_nodes.extend([x[1] for x in other_fields])
-            found = set(found_nodes)
-            conf = set(tree_layered[index])
-            diff = found.difference(conf)
-            print(f"Not all configured nodes were found on layer {index}: {diff}")
+        # Sanity-Check if for every configured node on this level a corresponding field in dataframe
+        if sanity_check:
+            if len(tree_layered[index]) != (len(array_fields) + len(struct_fields) + len(other_fields)):
+                found_nodes = [x[1] for x in array_fields]
+                found_nodes.extend([x[1] for x in struct_fields])
+                found_nodes.extend([x[1] for x in other_fields])
+                found = set(found_nodes)
+                conf = set(tree_layered[index])
+                diff = found.symmetric_difference(conf)
+                print(f"Not all configured nodes were found on layer {index}: {diff}")
 
         # First explode all relevant arrays on this level
         for field, node in array_fields:
@@ -207,7 +208,13 @@ class Flatten:
             df_temp1 = Flatten._select_structtype(df, map_alias)
             df_temp2 = df_temp1.drop(col(column_name))
 
-            df = Flatten._flatten(df_temp2, tree_layered, index+1)
+            # When this is last iteration on struct for this index/layer - also make Sanity-Checks
+            if node == struct_fields[-1][1]:
+                check = True
+            else:
+                check = False
+
+            df = Flatten._flatten(df_temp2, tree_layered, index+1, check)
 
         # Third sanity check for leaf fields
         for field, node in other_fields:
