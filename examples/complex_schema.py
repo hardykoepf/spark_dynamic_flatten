@@ -1,3 +1,5 @@
+# Here you will see example how to work with complex pyspark schema
+
 from pyspark.sql.types import (
     StructType, StructField, StringType, IntegerType, ArrayType, MapType, FloatType, BooleanType
 )
@@ -67,5 +69,5 @@ print(tree.generate_fully_flattened_struct())
 # Subtract two trees to see differences as a new returned tree
 # Tree2 has one element (leaf) additional. So the newly generated tree after subtraction
 # has all nodes to the additional field
-new = tree2.subtract(tree)
-new.print()
+tree_diff = tree2.subtract(tree)
+tree_diff.print()
