@@ -178,6 +178,8 @@ class Flatten:
             column_name = field.name
             if node.is_leaf():
                 # When the path to array is leaf, we leave it as array
+                # If the array only consists of elementType (no Struct) use Wildcard (*) to explode
+                # "path.to.array.*"
                 continue
             # When array has StructType as elementType, add to struct_fields
             if isinstance(field.dataType.elementType, StructType):
