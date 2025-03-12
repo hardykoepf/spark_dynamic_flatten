@@ -43,6 +43,8 @@ class Tree:
         Builds the list of all ancestors for one specific node
     get_path_to_node()
         Returns the path to one specific node. Separator can be choosen.
+    subtract(self, other: 'Tree') -> 'Tree':
+            Subtracts another Tree from this Tree and returns the difference as a new Tree.  
     """
 
     # Constant Character for wildcard
@@ -263,17 +265,18 @@ class Tree:
         root = self.get_root()
         return self._get_tree_as_list(root)
 
-    def equals(self, other:"Tree") -> Tuple[bool, set]:
+    def equals(self, other:"Tree") -> bool:
         """
         Checks if the complete tree equals another tree (not only nodes!).
 
         Returns
         ----------
-        tuple(bool, set)
+        bool
             The bool returns True if trees are identically,
-            the set returns differences (set will be empty when identical)
+            when trees are not identical, you can use subtract to get differences
         """
-        assert type(other) is type(self), f"Both trees has to be of same type. self: {type(self)} other: {type(other)}"
+        if not isinstance(other, Tree):
+            raise TypeError("Type mismatch: both objects must be of type Tree for comparison.")
         list_self = self.get_tree_as_list()
         set_self = set(list_self)
         list_other = other.get_tree_as_list()
@@ -281,13 +284,13 @@ class Tree:
 
         difference = set_self.symmetric_difference(set_other)
         if len(difference) == 0:
-            return True, difference
+            return True
         else:
-            return False, difference
+            return False
 
-    def subtract(self, other:"Tree") -> Tuple[bool, set]:
+    def subtract(self, other:"Tree") -> "Tree":
         """
-        Subtracts two trees and returns difference.
+        Subtracts two trees and returns the difference also as a Tree.
         Trees has to be of same class.
 
         Returns
@@ -296,12 +299,21 @@ class Tree:
             The bool returns True if trees are identically,
             the set returns differences (set will be empty when identical)
         """
-        assert type(other) is type(self), f"Both trees has to be of same type. self: {type(self)} other: {type(other)}"
-        list_self = self.get_tree_as_list()
-        set_self = set(list_self)
-        list_other = other.get_tree_as_list()
-        set_other = set(list_other)
-        return set_self - set_other
+        if not isinstance(other, Tree):
+            raise TypeError("Type mismatch: both objects must be of type Tree for subtraction.")
+        
+        # Convert both trees to sets of tuples
+        set_self = set(self._tree_to_tuples(self))
+        set_other = set(self._tree_to_tuples(other))
+
+        # Calculate the difference
+        difference = set_self - set_other
+
+        # Convert the difference back to a SchemaTree
+        if difference:
+            return self._tuples_to_tree(difference)
+        else:
+            return Tree("root")
 
     def _search_node_by_name(self, node, name:str) -> Union["Tree",None]:
         if node.get_name() == name:

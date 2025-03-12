@@ -1,7 +1,7 @@
 """Module providing a FlattenTree which is used as configuration for flattening a dataframe.
 This tree inherits from the generic Tree implementation"""
 
-from typing import List, Optional, Union
+from typing import List, Optional, Union, Tuple
 from spark_dynamic_flatten import Tree
 
 class FlattenTree(Tree):
@@ -38,6 +38,9 @@ class FlattenTree(Tree):
 
         add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False) -> None:
             Adds a path to the tree
+
+        subtract(self, other: 'FlattenTree') -> 'FlattenTree':
+            Subtracts another FlattenTree from this FlattenTree and returns the difference as a new FlattenTree.    
     """
 
     def __init__(self,
@@ -158,3 +161,87 @@ class FlattenTree(Tree):
                 nearest_node.add_child(new_node)
                 # For next iteration set "nearest_node" to actually created new_node
                 nearest_node = new_node
+
+    def subtract(self, other: 'FlattenTree') -> 'FlattenTree':
+        """
+        Subtracts another FlattenTree from this FlattenTree and returns the difference as a new FlattenTree.
+        Metadata is not taken into account for subtract!
+
+        Parameters
+        ----------
+        other : FlattenTree
+            The other FlattenTree to subtract from this one.
+
+        Returns
+        -------
+        FlattenTree
+            A new FlattenTree representing the difference.
+        """
+        if not isinstance(other, FlattenTree):
+            raise TypeError("Type mismatch: both objects must be of type FlattenTree for subtraction.")
+
+        # Convert both trees to sets of tuples
+        set_self = set(self._tree_to_tuples(self))
+        set_other = set(self._tree_to_tuples(other))
+
+        # Calculate the difference
+        difference = set_self - set_other
+
+        # Convert the difference back to a FlattenTree
+        if difference:
+            return self._tuples_to_tree(difference)
+        else:
+            return FlattenTree("root")
+
+    def _tree_to_tuples(self, node: 'FlattenTree') -> List[Tuple]:
+        """
+        Converts a FlattenTree to a list of tuples representing the tree structure.
+
+        Parameters
+        ----------
+        node : FlattenTree
+            The root-node of tree to convert.
+
+        Returns
+        -------
+        List[Tuple]
+            A list of tuples representing the tree structure.
+        """
+        if node.get_name() == "root":
+            tuples = []
+        else:
+            path = node.get_path_to_node(".")
+            tuples = [(path, node.get_alias(), node.get_is_identifier())]
+        
+        for child in node.get_children():
+            tuples.extend(self._tree_to_tuples(child))
+        return tuples
+
+    def _tuples_to_tree(self, tuples: List[Tuple]) -> 'FlattenTree':
+        """
+        Converts a list of tuples back to a FlattenTree.
+
+        Parameters
+        ----------
+        tuples : List[Tuple]
+            A list of tuples representing the tree structure.
+
+        Returns
+        -------
+        FlattenTree
+            The reconstructed FlattenTree.
+        """
+        if not tuples:
+            return None
+
+        # Create a root node
+        root = FlattenTree("root")
+
+        # Add child nodes
+        for path, alias, is_identifier in tuples:
+            root.add_path_to_tree(path = path,
+                                   alias = alias,
+                                   is_identifier = is_identifier,
+                                    )
+        return root
+
