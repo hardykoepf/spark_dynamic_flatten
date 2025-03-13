@@ -295,7 +295,7 @@ class Tree:
 
         Returns
         ----------
-        tuple(bool, set)
+        Tree
             The bool returns True if trees are identically,
             the set returns differences (set will be empty when identical)
         """
@@ -308,6 +308,33 @@ class Tree:
 
         # Calculate the difference
         difference = set_self - set_other
+
+        # Convert the difference back to a SchemaTree
+        if difference:
+            return self._tuples_to_tree(difference)
+        else:
+            return Tree("root")
+
+    def symmetric_difference(self, other:"Tree") -> "Tree":
+        """
+        Identifies differences comparing two trees and returns the difference also as a Tree.
+        Trees has to be of same class.
+
+        Returns
+        ----------
+        Tree
+            The bool returns True if trees are identically,
+            the set returns differences (set will be empty when identical)
+        """
+        if not isinstance(other, Tree):
+            raise TypeError("Type mismatch: both objects must be of type Tree for subtraction.")
+        
+        # Convert both trees to sets of tuples
+        set_self = set(self._tree_to_tuples(self))
+        set_other = set(self._tree_to_tuples(other))
+
+        # Calculate the difference
+        difference = set_self.symmetric_difference(set_other)
 
         # Convert the difference back to a SchemaTree
         if difference:

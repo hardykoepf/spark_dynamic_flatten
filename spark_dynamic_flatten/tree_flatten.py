@@ -193,6 +193,37 @@ class FlattenTree(Tree):
         else:
             return FlattenTree("root")
 
+    def symmetric_difference(self, other: 'FlattenTree') -> 'FlattenTree':
+        """
+        Identifies differences comparing two FlattenTrees and returns the difference as a new FlattenTree.
+        Metadata is not taken into account for subtract!
+
+        Parameters
+        ----------
+        other : FlattenTree
+            The other FlattenTree to subtract from this one.
+
+        Returns
+        -------
+        FlattenTree
+            A new FlattenTree representing the difference.
+        """
+        if not isinstance(other, FlattenTree):
+            raise TypeError("Type mismatch: both objects must be of type FlattenTree for subtraction.")
+
+        # Convert both trees to sets of tuples
+        set_self = set(self._tree_to_tuples(self))
+        set_other = set(self._tree_to_tuples(other))
+
+        # Calculate the difference
+        difference = set_self.symmetric_difference(set_other)
+
+        # Convert the difference back to a FlattenTree
+        if difference:
+            return self._tuples_to_tree(difference)
+        else:
+            return FlattenTree("root")
+
     def _tree_to_tuples(self, node: 'FlattenTree') -> List[Tuple]:
         """
         Converts a FlattenTree to a list of tuples representing the tree structure.

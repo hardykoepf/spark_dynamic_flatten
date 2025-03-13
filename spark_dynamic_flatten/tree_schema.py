@@ -384,6 +384,37 @@ class SchemaTree(Tree):
         else:
             return SchemaTree("root")
 
+    def symmetric_difference(self, other: 'SchemaTree') -> 'SchemaTree':
+        """
+        Identifies differences comparing two SchemaTrees and returns the difference as a new SchemaTree.
+        Metadata is not taken into account for subtract!
+
+        Parameters
+        ----------
+        other : SchemaTree
+            The other SchemaTree to subtract from this one.
+
+        Returns
+        -------
+        SchemaTree
+            A new SchemaTree representing the difference.
+        """
+        if not isinstance(other, SchemaTree):
+            raise TypeError("Type mismatch: both objects must be of type SchemaTree for subtraction.")
+
+        # Convert both trees to sets of tuples
+        set_self = set(self._tree_to_tuples(self))
+        set_other = set(self._tree_to_tuples(other))
+
+        # Calculate the difference
+        difference = set_self.symmetric_difference(set_other)
+
+        # Convert the difference back to a SchemaTree
+        if difference:
+            return self._tuples_to_tree(difference)
+        else:
+            return SchemaTree("root")
+
     def _tree_to_tuples(self, node: 'SchemaTree') -> List[Tuple]:
         """
         Converts a SchemaTree to a list of tuples representing the tree structure.
