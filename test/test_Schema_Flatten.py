@@ -1,4 +1,7 @@
+import os
+import json
 import pytest
+from pyspark.sql.types import *
 from spark_dynamic_flatten import TreeManager, Tree, SchemaTree
 try:
     from .utils import relative_to_absolute
@@ -81,6 +84,20 @@ def test_flatten_struct(tm_root):
     tree_struct = tm_root.generate_fully_flattened_struct()
     # count fields of StructType 
     assert len(tree_struct.fieldNames()) == 11
+
+@pytest.fixture
+def structtype():
+    return StructType([StructField('season', IntegerType(), True), StructField('name', StringType(), True), StructField('driver_id', IntegerType(), True), StructField('name#2', StringType(), True), StructField('nationality', StringType(), True), StructField('race_id', IntegerType(), True), StructField('race_name', StringType(), True), StructField('position', IntegerType(), True), StructField('points', IntegerType(), True), StructField('lap_number', IntegerType(), True), StructField('time', StringType(), True)])
+
+def test_generate_flattened_schema(tm_root, structtype):
+    flatten = TreeManager.from_flatten_json_file("test/data/formula1_flatten.json")
+    file_name = os.path.join(os.path.dirname(os.path.realpath('__file__')), r'test/data/formula1_schema.json')
+    with open(file_name, "r") as f:
+        struct_file = json.load(f)
+    struct = StructType.fromJson(struct_file)
+    struct_flat = flatten.generate_flattened_schema(struct)
+    struct_type = struct_flat.to_struct_type()
+    assert struct_type == structtype
 
 if __name__ == "__main__":
     pytest.main([__file__,"-s"])

@@ -2,7 +2,8 @@
 This tree inherits from the generic Tree implementation"""
 
 from typing import List, Optional, Union, Tuple
-from spark_dynamic_flatten import Tree
+from pyspark.sql.types import StructType
+from spark_dynamic_flatten import Tree, SchemaTree
 
 class FlattenTree(Tree):
     """
@@ -276,3 +277,55 @@ class FlattenTree(Tree):
                                     )
         return root
 
+    def generate_flattened_schema(self, nested_schema: StructType) -> StructType:
+        """
+        Generates a Schema (StructType) based on the FlattenTree.
+        As Parameter the corresponding deeply nested StructType which should be flattened
+        with this FlattenTree is needed.
+
+        Parameters
+        ----------
+        nested_schema : StructType
+            Deeply nested schema which should be flatten with this FlattenTree
+
+        Returns
+        -------
+        StructType
+            Schema which Dataframe should look like after flattening
+        """
+        # Make sure to start from root node of tree
+        if self.is_root():
+            root_node = self
+        else:
+            root_node = self
+
+        # Generate a SchemaTree from supplied StructType
+        struct_tree = SchemaTree("root")
+        struct_tree.add_struct_type_to_tree(nested_schema)
+
+        # Instanciate new SchemaTree
+        result = SchemaTree("root")
+
+        for node in root_node.walk_tree():
+            if node.is_leaf():
+                # When its leaf, this will be a column after flatten
+                path_to_leaf = node.get_path_to_node(".")
+                # search counterpart in StructType to get details
+                struct_node, missing_part = struct_tree.search_node_by_path(path_to_leaf)
+                if missing_part:
+                    # When the node doesn't match in complete, the StructType semms to not match to FlattenTree
+                    # This is an error
+                    raise TypeError('Supplied StrutType doesnt fit to Tree. Path could not be found: {path_to_leaf}')
+                result_node = SchemaTree(
+                    name=node.get_alias() if node.get_alias() else node.get_name(),
+                    data_type=struct_node.get_data_type(),
+                    nullable=struct_node.get_nullable(),
+                    metadata={},
+                    element_type=struct_node.get_element_type(),
+                    contains_null=struct_node.get_contains_null(),
+                    key_type=struct_node.get_key_type(),
+                    value_type=struct_node.get_value_type(),
+                    parent=result
+                )
+                result.add_child(result_node)
+        return result

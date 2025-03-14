@@ -26,6 +26,8 @@ class Tree:
         Check if node is root node
     get_leafs()
         Returns all leafs of the tree
+    walk_tree()
+        Walks through the hole tree and yields every node
     get_tree_as_list()
         Returns the tree as nested list.
         Every index of the outer list holds the reference to tree nodes of that layer.
@@ -452,6 +454,28 @@ class Tree:
                 nearest_node.add_child(new_node)
                 # For next iteration set "nearest_node" to actually created new_node
                 nearest_node = new_node
+
+    def walk_tree(self, node: Optional['Tree'] = None) -> 'Tree':
+        """
+        Walks through the entire tree and yields each node.
+
+        Parameters
+        ----------
+        node : Tree, optional
+            The node to start walking from. If None, starts from the root.
+
+        Yields
+        ------
+        Tree
+            Each node in the tree.
+        """
+        if node is None:
+            node = self
+
+        yield node
+
+        for child in node.get_children():
+            yield from self.walk_tree(child)
 
     def _print_tree(self, node:"Tree", layer:int = 0):
         layer_int = layer

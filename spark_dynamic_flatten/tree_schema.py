@@ -471,3 +471,47 @@ class SchemaTree(Tree):
                                    value_type = value_type
                                     )
         return root
+
+    def to_struct_type(self) -> StructType:
+        """
+        Converts the SchemaTree back to a PySpark StructType.
+
+        Returns
+        -------
+        StructType
+            The PySpark StructType representing the schema.
+        """
+        fields = []
+        for child in self.get_children():
+            fields.append(self._node_to_struct_field(child))
+        return StructType(fields)
+
+    def _node_to_struct_field(self, node: 'SchemaTree') -> StructField:
+        """
+        Helper method to convert a SchemaTree node to a StructField.
+
+        Parameters
+        ----------
+        node : SchemaTree
+            The node to convert.
+
+        Returns
+        -------
+        StructField
+            The corresponding StructField.
+        """
+        if node.get_data_type() == "struct":
+            # Recursively convert child nodes
+            child_fields = [self._node_to_struct_field(child) for child in node.get_children()]
+            data_type = StructType(child_fields)
+        elif node.get_data_type() == "array":
+            element_type = get_pyspark_sql_type(node.get_element_type())
+            data_type = ArrayType(element_type, node.get_contains_null())
+        elif node.get_data_type() == "map":
+            key_type = get_pyspark_sql_type(node.get_key_type())
+            value_type = get_pyspark_sql_type(node.get_value_type())
+            data_type = MapType(key_type, value_type)
+        else:
+            data_type = get_pyspark_sql_type(node.get_data_type())
+
+        return StructField(node.get_name(), data_type, node.get_nullable(), node.get_metadata())
