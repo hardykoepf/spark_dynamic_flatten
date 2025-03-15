@@ -190,7 +190,7 @@ class SchemaTree(Tree):
 
         for field in struct:
             # Special case for arrays with elementType different to Field, Struct or Array
-            if isinstance(field.dataType, ArrayType) and not isinstance(field.dataType.elementType, (StructType, StructField, ArrayType)):
+            if isinstance(field.dataType, ArrayType): # and not isinstance(field.dataType.elementType, (StructType, StructField, ArrayType)):
                 # Create a new node with element_type and contains_null
                 new_node = SchemaTree(name = field.name, data_type = field.dataType.typeName(), nullable = field.nullable, metadata = field.metadata, element_type = field.dataType.elementType.typeName(), contains_null = field.dataType.containsNull)
             elif isinstance(field.dataType, MapType):
@@ -505,8 +505,15 @@ class SchemaTree(Tree):
             child_fields = [self._node_to_struct_field(child) for child in node.get_children()]
             data_type = StructType(child_fields)
         elif node.get_data_type() == "array":
-            element_type = get_pyspark_sql_type(node.get_element_type())
-            data_type = ArrayType(element_type, node.get_contains_null())
+            # When its array, it could be an array with a Sruct or a array with a simple data-type
+            if node.get_element_type() == "struct":
+                # Array with Struct
+                child_fields = [self._node_to_struct_field(child) for child in node.get_children()]
+                data_type = ArrayType(StructType(child_fields), node.get_contains_null())
+            else:
+                # Array with simple datatype
+                element_type = get_pyspark_sql_type(node.get_element_type())
+                data_type = ArrayType(element_type, node.get_contains_null())
         elif node.get_data_type() == "map":
             key_type = get_pyspark_sql_type(node.get_key_type())
             value_type = get_pyspark_sql_type(node.get_value_type())

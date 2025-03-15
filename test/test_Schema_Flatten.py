@@ -56,7 +56,6 @@ def test_to_tree(tm_root):
     assert len(layered) == 5
 
 def test_subtract(tm_root, tm_root2):
-    tm_root.print()
     tm_root2.add_path_to_tree(
         path = "teams.drivers.nickname",
         data_type = "string",
@@ -98,6 +97,11 @@ def test_generate_flattened_schema(tm_root, structtype):
     struct_flat = flatten.generate_flattened_schema(struct)
     struct_type = struct_flat.to_struct_type()
     assert struct_type == structtype
+
+def test_to_struct_type(tm_root):
+    # Create struct from tm_root schema and convert back to tree.
+    new_tree = TreeManager.from_struct_type(tm_root.to_struct_type())
+    assert tm_root.equals(new_tree)
 
 if __name__ == "__main__":
     pytest.main([__file__,"-s"])
