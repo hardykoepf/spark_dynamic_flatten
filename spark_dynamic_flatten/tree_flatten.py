@@ -304,7 +304,7 @@ class FlattenTree(Tree):
         struct_tree.add_struct_type_to_tree(nested_schema)
 
         # Instanciate new SchemaTree
-        result = SchemaTree("root")
+        result_tree = SchemaTree("root")
 
         for node in root_node.walk_tree():
             if node.is_leaf():
@@ -325,7 +325,8 @@ class FlattenTree(Tree):
                     contains_null=struct_node.get_contains_null(),
                     key_type=struct_node.get_key_type(),
                     value_type=struct_node.get_value_type(),
-                    parent=result
+                    parent=result_tree
                 )
-                result.add_child(result_node)
+                result_tree.add_child(result_node)
+        result = result_tree.to_struct_type()
         return result

@@ -95,8 +95,7 @@ def test_generate_flattened_schema(tm_root, structtype):
         struct_file = json.load(f)
     struct = StructType.fromJson(struct_file)
     struct_flat = flatten.generate_flattened_schema(struct)
-    struct_type = struct_flat.to_struct_type()
-    assert struct_type == structtype
+    assert struct_flat == structtype
 
 def test_to_struct_type(tm_root):
     # Create struct from tm_root schema and convert back to tree.
