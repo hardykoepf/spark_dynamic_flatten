@@ -21,6 +21,11 @@ To install the dependencies for this project, you can use [Poetry](https://pytho
    git clone https://github.com/hardykoepf/spark_dynamic_flatten.git
    cd spark_dynamic_flatten
 
+2. Alternatively this is on pypi:
+```
+pip install pyspark-dynamic-flatten
+```
+
 ## Classes within this solution
 
 The solution consists of three classes implementing specific trees:
@@ -53,9 +58,79 @@ The list on index 0 from outer list holds the nodes of layer 1. On index 1 repre
 root_node_of_tree.get_tree_layered()
 ```
 
+#### Comparing Trees
+Comparing trees is really helpful. Therefore you can use the equals function.
+This will work for all kind of trees and will return True if the two trees you compare are equal.
+
+```
+from spark_dynamic_flatten import TreeManager
+
+tree_schema1 = TreeManager.from_struct_type(df1.schema)
+tree_schema2 = TreeManager.from_struct_type(df2.schema)
+
+if tree_schema1.equals(tree_schema2):
+    print("Schemas are equal")
+```
+
+#### Symmetric difference of Trees
+To see, how trees differ in both directions, the symmetric_difference function will return a set of tuples (every tuple represents is one node/path).
+Enhancing above example with symmetric_difference:
+
+```
+from spark_dynamic_flatten import TreeManager
+
+tree_schema1 = TreeManager.from_struct_type(df1.schema)
+tree_schema2 = TreeManager.from_struct_type(df2.schema)
+
+if tree_schema1.equals(tree_schema2):
+    print("Schemas are equal")
+else:
+    difference = tree_schema1.symmetric_difference(tree_schema2)
+    print("Following symmetric differences (set of tuples):)
+    print(difference)
+```
+
+#### Subtraction of Trees
+you can also subtract one tree from another and see what paths will remain.
+The result will be a set of tuples (every tuple represents is one node/path).
+It's more or less similar to symmetric_difference, but subtract only works in one direction.
+
+```
+from spark_dynamic_flatten import TreeManager
+
+tree_schema1 = TreeManager.from_struct_type(df1.schema)
+tree_schema2 = TreeManager.from_struct_type(df2.schema)
+
+if tree_schema1.equals(tree_schema2):
+    print("Schemas are equal")
+else:
+    difference = tree_schema1.subtract(tree_schema2)
+    print("Following differences when subtracting tree_schema2 from tree_schema1 (set of tuples):)
+    print(difference)
+```
+
+#### Intersection of trees
+Instead of searching for differences, you can search for intersection of two trees. 
+Result will be the "lowest common denominator" of both trees.  
+The result of this function will not be a simple set - it will return the common part of the trees.
+When there are no common parts, the result will be None.  
+This will be helpful when you have two Schemas and search for similarities.
+
+```
+from spark_dynamic_flatten import TreeManager
+
+tree_schema1 = TreeManager.from_struct_type(df1.schema)
+tree_schema2 = TreeManager.from_struct_type(df2.schema)
+
+common_denominator =  tree_schema1.intersection(tree_schema2, only_by_names=True)
+if common_denominator:
+    common_denominator.print()
+```
+
+
 ## Usage
 
-Because two different use cases are implemented, we have to separate. But the use cases are related to each other.  
+Because two different use cases are implemented, we have to separate. But the use-cases behind these classes are related to each other.  
 
 ### Schemas
 
@@ -68,22 +143,6 @@ Especially for schemas, following static methods are offered (creating a Tree of
 
 For Schemas, the nodes are instances of SchemaTree class.
 
-#### Comparing Schemas
-A helpful function comes with SchemaTree is to compare schemas of two PySpark dataframes, you can use the equals function.  
-
-```
-from spark_dynamic_flatten import TreeManager
-
-tree_schema1 = TreeManager.from_struct_type(df1.schema)
-tree_schema2 = TreeManager.from_struct_type(df2.schema)
-
-if tree_schema1.equals(tree_schema2):
-    print("Schemas are equal")
-else:
-    difference = tree_schema1.symmetric_difference(tree_schema2)
-    print("Following subtree is different:)
-    difference.print()
-```
 
 #### Generate configuration for fully flattening a dataframe
 

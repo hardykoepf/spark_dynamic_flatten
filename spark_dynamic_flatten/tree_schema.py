@@ -60,8 +60,14 @@ class SchemaTree(Tree):
         generate_fully_flattened_struct(self) -> StructType:
             Flattens the tree and returns it as spark schema StuctType
 
-        subtract(self, other: 'SchemaTree') -> 'SchemaTree':
-            Subtracts another SchemaTree from this SchemaTree and returns the difference as a new SchemaTree.    
+        subtract(self, other: 'SchemaTree') -> set:
+            Subtracts another SchemaTree from this SchemaTree and returns the difference as a set of tuples.
+
+        intersection(self, other: 'SchemaTree') -> SchemaTree:
+            Returns the intersections of two SchemaTrees as a new SchemaTree. 
+
+        symmetric_difference(self, other: 'SchemaTree') -> set:
+            Searches for symmetric differences of two SchemaTrees and returns it as a set of tuples. 
     """
 
     def __init__(self,
@@ -228,14 +234,27 @@ class SchemaTree(Tree):
         ----------
         path : str
             Path to be pigeonholed to the tree
+        data_type : str
+            DataType of the node
+        nullable : bool
+            should the node be nullable
+        metadata : dict
+            metadata
+        element_type : str
+        contains_null : bool
+        key_type : str
+        value_type : str
 
         """
         # Split path
         path_list = path.split(".")
         # Search if the complete path is already existing.
-        # If not, we get back the last existing node and the missing part of path
+        # For SchemaTree you have to make sure that the parents of the nodepath are already in the tree.
+        # It makes no sense for SchemaTree to generate parents based on a higher level node.
+        # Therefore the datatype and nullable could not be taken from a higher level.
+        # So at least there should only last node missing. Otherwise it's an error
         nearest_node, missing_path = self.search_node_by_path(path_list)
-        if len(missing_path) > 0:
+        if len(missing_path) == 1:
             for missing_node in missing_path:
                 # Create new node
                 new_node = SchemaTree(missing_node,
@@ -251,6 +270,11 @@ class SchemaTree(Tree):
                 nearest_node.add_child(new_node)
                 # For next iteration set "nearest_node" to actually created new_node
                 nearest_node = new_node
+        elif len(missing_path) > 1:
+            # This node seems to be hanging in the air and is not considered in resulting Tree
+            # Maybe this should be an exception?
+            print(f"Following path could not be added to tree, because of missing parent: {path}")
+            pass
 
     def generate_fully_flattened_paths(self) -> dict:
         """
@@ -352,68 +376,6 @@ class SchemaTree(Tree):
                 fields.append(StructField(new_name, get_pyspark_sql_type(leaf.get_data_type()), leaf.get_nullable(), leaf.get_metadata()))
         # Embed List in dict-key field-paths which is entry point for creating a TreeFlatten
         return StructType(fields)
-    
-    def subtract(self, other: 'SchemaTree') -> 'SchemaTree':
-        """
-        Subtracts another SchemaTree from this SchemaTree and returns the difference as a new SchemaTree.
-        Metadata is not taken into account for subtract!
-
-        Parameters
-        ----------
-        other : SchemaTree
-            The other SchemaTree to subtract from this one.
-
-        Returns
-        -------
-        SchemaTree
-            A new SchemaTree representing the difference.
-        """
-        if not isinstance(other, SchemaTree):
-            raise TypeError("Type mismatch: both objects must be of type SchemaTree for subtraction.")
-
-        # Convert both trees to sets of tuples
-        set_self = set(self._tree_to_tuples(self))
-        set_other = set(self._tree_to_tuples(other))
-
-        # Calculate the difference
-        difference = set_self - set_other
-
-        # Convert the difference back to a SchemaTree
-        if difference:
-            return self._tuples_to_tree(difference)
-        else:
-            return SchemaTree("root")
-
-    def symmetric_difference(self, other: 'SchemaTree') -> 'SchemaTree':
-        """
-        Identifies differences comparing two SchemaTrees and returns the difference as a new SchemaTree.
-        Metadata is not taken into account for subtract!
-
-        Parameters
-        ----------
-        other : SchemaTree
-            The other SchemaTree to subtract from this one.
-
-        Returns
-        -------
-        SchemaTree
-            A new SchemaTree representing the difference.
-        """
-        if not isinstance(other, SchemaTree):
-            raise TypeError("Type mismatch: both objects must be of type SchemaTree for subtraction.")
-
-        # Convert both trees to sets of tuples
-        set_self = set(self._tree_to_tuples(self))
-        set_other = set(self._tree_to_tuples(other))
-
-        # Calculate the difference
-        difference = set_self.symmetric_difference(set_other)
-
-        # Convert the difference back to a SchemaTree
-        if difference:
-            return self._tuples_to_tree(difference)
-        else:
-            return SchemaTree("root")
 
     def _tree_to_tuples(self, node: 'SchemaTree') -> List[Tuple]:
         """
@@ -439,7 +401,10 @@ class SchemaTree(Tree):
             tuples.extend(self._tree_to_tuples(child))
         return tuples
 
-    def _tuples_to_tree(self, tuples: List[Tuple]) -> 'SchemaTree':
+    def _tuples_to_dict(self, tuples: set) -> List[dict]:
+        return [{"path": x[0], "data_type": x[1], "nullable": x[2], "element_type": x[3], "contains_null": x[4], "key_type": x[5], "value_type": x[6]} for x in tuples]
+
+    def _tuples_to_tree(self, tuples: List[Tuple]) -> Optional['SchemaTree']:
         """
         Converts a list of tuples back to a SchemaTree.
 
@@ -459,8 +424,11 @@ class SchemaTree(Tree):
         # Create a root node
         root = SchemaTree("root")
 
+        # sort the tuples based on the level of the nodes. E.g a node with name/path node1.node11 is on level 2 whereas node1 is a level 1 node
+        sorted_tuples = sorted(tuples, key=lambda x: len(x[0]))
+
         # Add child nodes
-        for path, data_type, nullable, element_type, contains_null, key_type, value_type in tuples:
+        for path, data_type, nullable, element_type, contains_null, key_type, value_type in sorted_tuples:
             root.add_path_to_tree(path = path,
                                    data_type = data_type,
                                    nullable = nullable,
@@ -470,7 +438,10 @@ class SchemaTree(Tree):
                                    key_type = key_type,
                                    value_type = value_type
                                     )
-        return root
+        if root.equals(SchemaTree("root")):
+            pass
+        else:
+            return root
 
     def to_struct_type(self) -> StructType:
         """

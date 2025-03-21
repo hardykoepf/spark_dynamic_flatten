@@ -4,9 +4,11 @@ from spark_dynamic_flatten import TreeManager
 # Create trees based on schema json
 tree_schema1 = TreeManager.from_schema_json_file("examples/formula1_schema.json")
 
-# When you want to use the schema, you can create a json to be used for flatten the struct in complete
+# When you want to use the schema, you can create a dict to be used for flatten the struct in complete
 # This will generate the config json for flattening which you can store as file and modify to your needs.
-flatten_config = tree_schema1.generate_fully_flattened_struct()
+flatten_config = tree_schema1.generate_fully_flattened_paths()
+# Also you can create a json string which can be used to modify and store as file:
+# json_string = tree_schema1.generate_fully_flattened_json()
 
 # This generated config you can use for creating a FlattenTree which is used to flatten
 # In real world, this library is not intended to full flatten a Dataframe (but of course you can)

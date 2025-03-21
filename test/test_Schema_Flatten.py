@@ -62,12 +62,8 @@ def test_subtract(tm_root, tm_root2):
         nullable = True
     )
     difference = tm_root2.subtract(tm_root)
-    assert isinstance(difference, SchemaTree)
-    layered = difference.get_tree_layered()
-    assert len(layered[2]) == 1
-    # Names of node on index 2 should be "nickname"
-    for node in layered[2]:
-        assert node.get_name() == "nickname"
+    assert len(difference) == 1
+    assert difference == [{'path': 'teams.drivers.nickname', 'data_type': 'string', 'nullable': True, 'element_type': None, 'contains_null': None, 'key_type': None, 'value_type': None}]
 
 
 @pytest.fixture
@@ -101,6 +97,20 @@ def test_to_struct_type(tm_root):
     # Create struct from tm_root schema and convert back to tree.
     new_tree = TreeManager.from_struct_type(tm_root.to_struct_type())
     assert tm_root.equals(new_tree)
+
+@pytest.fixture
+def tm_scrambled():
+    # Scrambled version of schema for testing subtract and intersection only by names
+    root = TreeManager.from_schema_json_file(relative_to_absolute("data/formula1_schema_scrambled.json"))
+    return root
+
+def test_intersection(tm_root, tm_scrambled):
+    tree_intersection = tm_root.intersection(tm_scrambled, only_by_name=True)
+    # No nodes/names were changed, so result should be same like tm_root
+    assert tm_root.equals(tree_intersection)
+    tree_intersection = tm_root.intersection(tm_scrambled, only_by_name=False)
+    layered = tree_intersection.get_tree_layered()
+    assert len(layered[1]) == 1
 
 if __name__ == "__main__":
     pytest.main([__file__,"-s"])

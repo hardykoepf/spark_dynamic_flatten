@@ -131,7 +131,7 @@ class FlattenTree(Tree):
     def add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False) -> None:
         """
         Adds a path (pigeonhole) to the tree. Overwrite method of super class.
-        Tis node also takes care about having alias and is_identifier on leaf nodes
+        This node also takes care about having alias and is_identifier on leaf nodes
 
         Parameters
         ----------
@@ -163,68 +163,6 @@ class FlattenTree(Tree):
                 # For next iteration set "nearest_node" to actually created new_node
                 nearest_node = new_node
 
-    def subtract(self, other: 'FlattenTree') -> 'FlattenTree':
-        """
-        Subtracts another FlattenTree from this FlattenTree and returns the difference as a new FlattenTree.
-        Metadata is not taken into account for subtract!
-
-        Parameters
-        ----------
-        other : FlattenTree
-            The other FlattenTree to subtract from this one.
-
-        Returns
-        -------
-        FlattenTree
-            A new FlattenTree representing the difference.
-        """
-        if not isinstance(other, FlattenTree):
-            raise TypeError("Type mismatch: both objects must be of type FlattenTree for subtraction.")
-
-        # Convert both trees to sets of tuples
-        set_self = set(self._tree_to_tuples(self))
-        set_other = set(self._tree_to_tuples(other))
-
-        # Calculate the difference
-        difference = set_self - set_other
-
-        # Convert the difference back to a FlattenTree
-        if difference:
-            return self._tuples_to_tree(difference)
-        else:
-            return FlattenTree("root")
-
-    def symmetric_difference(self, other: 'FlattenTree') -> 'FlattenTree':
-        """
-        Identifies differences comparing two FlattenTrees and returns the difference as a new FlattenTree.
-        Metadata is not taken into account for subtract!
-
-        Parameters
-        ----------
-        other : FlattenTree
-            The other FlattenTree to subtract from this one.
-
-        Returns
-        -------
-        FlattenTree
-            A new FlattenTree representing the difference.
-        """
-        if not isinstance(other, FlattenTree):
-            raise TypeError("Type mismatch: both objects must be of type FlattenTree for subtraction.")
-
-        # Convert both trees to sets of tuples
-        set_self = set(self._tree_to_tuples(self))
-        set_other = set(self._tree_to_tuples(other))
-
-        # Calculate the difference
-        difference = set_self.symmetric_difference(set_other)
-
-        # Convert the difference back to a FlattenTree
-        if difference:
-            return self._tuples_to_tree(difference)
-        else:
-            return FlattenTree("root")
-
     def _tree_to_tuples(self, node: 'FlattenTree') -> List[Tuple]:
         """
         Converts a FlattenTree to a list of tuples representing the tree structure.
@@ -249,6 +187,9 @@ class FlattenTree(Tree):
             tuples.extend(self._tree_to_tuples(child))
         return tuples
 
+    def _tuples_to_dict(self, tuples: set) -> List[dict]:
+        return [{"path": x[0], "alias": x[1], "is_identifier": x[2]} for x in tuples]
+
     def _tuples_to_tree(self, tuples: List[Tuple]) -> 'FlattenTree':
         """
         Converts a list of tuples back to a FlattenTree.
@@ -269,13 +210,20 @@ class FlattenTree(Tree):
         # Create a root node
         root = FlattenTree("root")
 
+        # sort the tuples based on the level of the nodes. E.g a node with name/path node1.node11 is on level 2 whereas node1 is a level 1 node
+        sorted_tuples = sorted(tuples, key=lambda x: len(x[0]))
+
         # Add child nodes
-        for path, alias, is_identifier in tuples:
+        for path, alias, is_identifier in sorted_tuples:
             root.add_path_to_tree(path = path,
                                    alias = alias,
                                    is_identifier = is_identifier,
                                     )
-        return root
+
+        if root.equals(FlattenTree("root")):
+            pass
+        else:
+            return root
 
     def generate_flattened_schema(self, nested_schema: StructType) -> StructType:
         """

@@ -66,8 +66,7 @@ tree2.print()
 # Create a spark Schema which represents the tree after fully flattening
 print(tree.generate_fully_flattened_struct())
 
-# Subtract two trees to see differences as a new returned tree
-# Tree2 has one element (leaf) additional. So the newly generated tree after subtraction
-# has all nodes to the additional field
-tree_diff = tree2.subtract(tree)
-tree_diff.print()
+# Subtract two trees to see differences as a set of tuples
+# Tree2 has one element (leaf) additional. So the set should have one tuple with the path and all other attributes of the node to this additional field
+set_diff = tree2.subtract(tree)
+print(set_diff)

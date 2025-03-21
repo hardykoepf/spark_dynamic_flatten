@@ -290,46 +290,67 @@ class Tree:
         else:
             return False
 
-    def subtract(self, other:"Tree") -> "Tree":
+    def subtract(self, other:"Tree", only_by_name:bool = False) -> set:
         """
-        Subtracts two trees and returns the difference also as a Tree.
-        Trees has to be of same class.
+        Subtracts other from self and returns the difference also as a set of tuples.
+        Trees to subtract has to be of same class.
+        Imortant for inherited SchemaTree: Metadata is not taken into account anyways!
+
+        Parameters
+        ----------
+        other : Tree
+            The other Tree to subtract from this one.
+        only_by_name : bool
+            Defines if the subtract should only be done based on node-names and not of all attribute (e.g. data-type, etc) of the node.
+            Mainly relevant for inherited Trees 
 
         Returns
-        ----------
-        Tree
-            The bool returns True if trees are identically,
-            the set returns differences (set will be empty when identical)
+        -------
+        list[dict]
+            A list of dicts where every dict represents one node which is different.
         """
-        if not isinstance(other, Tree):
-            raise TypeError("Type mismatch: both objects must be of type Tree for subtraction.")
+        if type(other) != type(self):
+            raise TypeError(f"Type mismatch: both objects must be of same type for subtraction. self: {type(self)}, other: {type(other)}.")
         
-        # Convert both trees to sets of tuples
-        set_self = set(self._tree_to_tuples(self))
-        set_other = set(self._tree_to_tuples(other))
+        if only_by_name:
+            self_tuples = self._tree_to_tuples(self)
+            other_tuples = self._tree_to_tuples(other)
+            
+            # Extract the first entries (name/path attribute) of tuples in other_tuples into a set for faster lookup
+            other_first_entries = {t[0] for t in other_tuples}
 
-        # Calculate the difference
-        difference = set_self - set_other
+            # Get the tuples from self_tuples where the first entry (name/path attribute) NOT matches any first entry in other_tuples
+            difference = [t for t in self_tuples if t[0] not in other_first_entries]
 
-        # Convert the difference back to a SchemaTree
-        if difference:
-            return self._tuples_to_tree(difference)
         else:
-            return Tree("root")
+            # Convert both trees to sets of tuples
+            set_self = set(self._tree_to_tuples(self))
+            set_other = set(self._tree_to_tuples(other))
 
-    def symmetric_difference(self, other:"Tree") -> "Tree":
+            # Calculate the difference
+            difference = set_self - set_other
+
+        # Convert set of tuples to list of dicts
+        return self._tuples_to_dict(difference)
+
+
+    def symmetric_difference(self, other:"Tree") -> set:
         """
-        Identifies differences comparing two trees and returns the difference also as a Tree.
-        Trees has to be of same class.
+        Identifies differences comparing two Trees and returns the difference as a set of tuples.
+        Imortant for inherited SchemaTree: Metadata is not taken into account!
+
+        Parameters
+        ----------
+        other : SchemaTree
+            The other SchemaTree to subtract from this one.
 
         Returns
-        ----------
-        Tree
-            The bool returns True if trees are identically,
-            the set returns differences (set will be empty when identical)
+        -------
+        set
+            A set of tuple representing the difference.
         """
-        if not isinstance(other, Tree):
-            raise TypeError("Type mismatch: both objects must be of type Tree for subtraction.")
+        if type(other) != type(self):
+            raise TypeError(f"Type mismatch: both objects must be of same type for symmetric difference. self: {type(self)}, other: {type(other)}.")
         
         # Convert both trees to sets of tuples
         set_self = set(self._tree_to_tuples(self))
@@ -338,11 +359,57 @@ class Tree:
         # Calculate the difference
         difference = set_self.symmetric_difference(set_other)
 
-        # Convert the difference back to a SchemaTree
-        if difference:
-            return self._tuples_to_tree(difference)
+        # Convert set of tuples to list of dicts
+        return self._tuples_to_dict(difference)
+
+    def intersection(self, other: 'Tree', only_by_name:bool = False) -> Optional['Tree']:
+        """
+        Returns the intersection of two Trees as a new Tree
+        Metadata is not taken into account for intersection anyways!
+        The tree from which the method is called (self) will have priority when running with attribute "only_by_name = True".
+        This means that nodes are taken from this tree for returned tree.
+        BUT BE AWARE: When there is only intersection on higher levels and the parents of a node has no intersection (this could happen when not only intersecting by names)
+                      then nothing is returned.
+                      The intersection has to start from root for intersect branches
+
+        Parameters
+        ----------
+        other : SchemaTree
+            The other SchemaTree to intersect with this one.
+        only_by_name : bool
+            Defines if the intersection should only be based on node-names and not of all attribute (e.g. data-type, etc) of the node.
+
+        Returns
+        -------
+        SchemaTree
+            A new SchemaTree representing the intersection between both Trees.
+        """
+        if only_by_name is False:
+            # When we have to search for every attribute, Trees has to be of same type
+            if type(other) != type(self):
+                raise TypeError(f"Type mismatch: both objects must be of same type for intersection when 'only_by_name=False'. self: {type(self)}, other: {type(other)}.")
+        
+        if only_by_name:
+            self_tuples = self._tree_to_tuples(self)
+            other_tuples = self._tree_to_tuples(other)
+            
+            # Extract the first entries (name/path attribute) of tuples in other_tuples into a set for faster lookup
+            other_first_entries = {t[0] for t in other_tuples}
+
+            # Get the tuples from self_tuples where the first entry (name/path attribute) matches any first entry in other_tuples
+            intersection = [t for t in self_tuples if t[0] in other_first_entries]
+
         else:
-            return Tree("root")
+            # Convert both trees to sets of tuples
+            set_self = set(self._tree_to_tuples(self))
+            set_other = set(self._tree_to_tuples(other))
+
+            # Calculate the difference
+            intersection = set_self.intersection(set_other)
+
+        # Convert the intersection back to a SchemaTree
+        if intersection:
+            return self._tuples_to_tree(intersection)
 
     def _search_node_by_name(self, node, name:str) -> Union["Tree",None]:
         if node.get_name() == name:
@@ -443,7 +510,7 @@ class Tree:
         # Search if the complete path is already existing.
         # If not, we get back the last existing node and the missing part of path
         nearest_node, missing_path = self.search_node_by_path(path_list)
-        if len(missing_path) > 0:
+        if len(missing_path) == 1:
             for missing_node in missing_path:
                 # Create new node
                 if missing_node == missing_path[-1]:
@@ -454,6 +521,11 @@ class Tree:
                 nearest_node.add_child(new_node)
                 # For next iteration set "nearest_node" to actually created new_node
                 nearest_node = new_node
+        elif len(missing_path) > 1:
+            # This node seems to be hanging in the air and is not considered in resulting Tree
+            # Maybe this should be an exception?
+            print(f"Following path could not be added to tree, because of missing parent: {path}")
+            pass
 
     def walk_tree(self, node: Optional['Tree'] = None) -> 'Tree':
         """
@@ -603,6 +675,9 @@ class Tree:
         for child in node.get_children():
             tuples.extend(self._tree_to_tuples(child))
         return tuples
+    
+    def _tuples_to_dict(self, tuples: set) -> List[dict]:
+        return [{"path": x[0]} for x in tuples]
 
     def _tuples_to_tree(self, tuples: List[Tuple]) -> 'Tree':
         """
@@ -624,10 +699,17 @@ class Tree:
         # Create a root node
         root = Tree("root")
 
+        # sort the tuples based on the level of the nodes. E.g a node with name/path node1.node11 is on level 2 whereas node1 is a level 1 node
+        sorted_tuples = sorted(tuples, key=lambda x: len(x[0]))
+
         # Add child nodes
-        for path in tuples:
+        for path in sorted_tuples:
             root.add_path_to_tree(path = path)
-        return root
+        
+        if root.equals(Tree("root")):
+            pass
+        else:
+            return root
 
     def to_tree(self) -> 'Tree':
         """

@@ -103,11 +103,11 @@ def test_equals(create_tree, create_dupl):
 
 def test_subtract(create_tree, create_dupl):
     result = create_tree.subtract(create_dupl)
-    assert len(result.get_tree_as_list()) == 0
+    assert len(result) == 0
     # Make changes to one tree
     create_dupl.add_child(Tree("new"))
     result = create_dupl.subtract(create_tree)
-    assert len(result.get_tree_as_list()) == 1
+    assert len(result) == 1
 
 def test_add_path_to_tree(create_tree):
     create_tree.add_path_to_tree("season.new_path")
