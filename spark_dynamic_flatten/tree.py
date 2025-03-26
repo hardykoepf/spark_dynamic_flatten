@@ -5,7 +5,7 @@ from typing import List, Tuple, Optional, Union
 class Tree:
     """
     A generic Tree class for representing hierarchical data structures.
-    Attributes
+    Attributes 
     ----------
     self._name : name of node
     self._children : list with reference to child tree nodes
