@@ -374,15 +374,15 @@ class Tree:
 
         Parameters
         ----------
-        other : SchemaTree
-            The other SchemaTree to intersect with this one.
+        other : Tree
+            The other Tree to intersect with this one.
         only_by_name : bool
             Defines if the intersection should only be based on node-names and not of all attribute (e.g. data-type, etc) of the node.
 
         Returns
         -------
-        SchemaTree
-            A new SchemaTree representing the intersection between both Trees.
+        Tree
+            A new Tree representing the intersection between both Trees.
         """
         if only_by_name is False:
             # When we have to search for every attribute, Trees has to be of same type
@@ -407,7 +407,7 @@ class Tree:
             # Calculate the difference
             intersection = set_self.intersection(set_other)
 
-        # Convert the intersection back to a SchemaTree
+        # Convert the intersection back to a Tree
         if intersection:
             return self._tuples_to_tree(intersection)
 
@@ -524,7 +524,7 @@ class Tree:
         elif len(missing_path) > 1:
             # This node seems to be hanging in the air and is not considered in resulting Tree
             # Maybe this should be an exception?
-            print(f"Following path could not be added to tree, because of missing parent: {path}")
+            print(f"WARNING: Following path could not be added to tree, because of missing parent: {path}")
             pass
 
     def walk_tree(self, node: Optional['Tree'] = None) -> 'Tree':
@@ -652,9 +652,11 @@ class Tree:
         root = self.get_root()
         return self._get_tree_layered(root)
 
-    def _tree_to_tuples(self, node: 'Tree') -> List[Tuple]:
+    def _tree_to_tuples(self, node: 'Tree') -> List[str]:
         """
         Converts a Tree to a list of tuples representing the tree structure.
+        For Tree it's misleading, because it creates not a Tuple, it's only a list of strings.
+        But for inherited classes it's tuples, thats why the method is named the same.
 
         Parameters
         ----------
@@ -670,18 +672,21 @@ class Tree:
             tuples = []
         else:
             path = node.get_path_to_node(".")
-            tuples = [(path)]
+            tuples = [path]
 
         for child in node.get_children():
             tuples.extend(self._tree_to_tuples(child))
         return tuples
     
     def _tuples_to_dict(self, tuples: set) -> List[dict]:
-        return [{"path": x[0]} for x in tuples]
+        # For Tree the set will only have one parameter "path" and no tuple
+        return [{"path": x} for x in tuples]
 
-    def _tuples_to_tree(self, tuples: List[Tuple]) -> 'Tree':
+    def _tuples_to_tree(self, tuples: List[str]) -> 'Tree':
         """
         Converts a list of tuples back to a Tree.
+        For Tree it's misleading, because it not a Tuple, it's only a list of strings.
+        But for inherited classes it's tuples, thats why the method is named the same.
 
         Parameters
         ----------
@@ -700,7 +705,7 @@ class Tree:
         root = Tree("root")
 
         # sort the tuples based on the level of the nodes. E.g a node with name/path node1.node11 is on level 2 whereas node1 is a level 1 node
-        sorted_tuples = sorted(tuples, key=lambda x: len(x[0]))
+        sorted_tuples = sorted(tuples, key=lambda x: len(x))
 
         # Add child nodes
         for path in sorted_tuples:

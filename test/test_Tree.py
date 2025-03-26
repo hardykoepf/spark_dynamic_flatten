@@ -109,6 +109,11 @@ def test_subtract(create_tree, create_dupl):
     result = create_dupl.subtract(create_tree)
     assert len(result) == 1
 
+def test_intersection(create_tree, create_dupl):
+    result_tree = create_tree.intersection(create_dupl)
+    layered_tree = result_tree.get_tree_layered()
+    assert len(layered_tree[4]) == 5
+
 def test_add_path_to_tree(create_tree):
     create_tree.add_path_to_tree("season.new_path")
 

@@ -273,7 +273,7 @@ class SchemaTree(Tree):
         elif len(missing_path) > 1:
             # This node seems to be hanging in the air and is not considered in resulting Tree
             # Maybe this should be an exception?
-            print(f"Following path could not be added to tree, because of missing parent: {path}")
+            print(f"WARNING: Following path could not be added to tree, because of missing parent: {path}")
             pass
 
     def generate_fully_flattened_paths(self) -> dict:
