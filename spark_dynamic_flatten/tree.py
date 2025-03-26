@@ -290,19 +290,24 @@ class Tree:
         else:
             return False
 
-    def subtract(self, other:"Tree", only_by_name:bool = False) -> set:
+    def subtract(self, other:"Tree", case_sensitive: bool = True) -> dict:
         """
         Subtracts other from self and returns the difference also as a set of tuples.
         Trees to subtract has to be of same class.
-        Imortant for inherited SchemaTree: Metadata is not taken into account anyways!
+        Important for inherited SchemaTree: Metadata is not taken into account anyways!
+        When you want to use subtraction of inherited Trees (like SchemaTree) only respecting paths, you first have to "cast" your Trees to basic Tree.
+        e.g.:
+        basic_tree1 = schema_tree1.to_tree()
+        basic_tree2 = schema_tree2.to_tree()
+        difference = basic_tree1.subtract(basic_tree2)
 
         Parameters
         ----------
         other : Tree
             The other Tree to subtract from this one.
-        only_by_name : bool
-            Defines if the subtract should only be done based on node-names and not of all attribute (e.g. data-type, etc) of the node.
-            Mainly relevant for inherited Trees 
+        case_sensitive: bool
+            Defines if the trees to subtract should respect case sensitivity.
+            If you choose False, all paths will be in lower case. Also the returned result will be in lower case!
 
         Returns
         -------
@@ -312,37 +317,31 @@ class Tree:
         if type(other) != type(self):
             raise TypeError(f"Type mismatch: both objects must be of same type for subtraction. self: {type(self)}, other: {type(other)}.")
         
-        if only_by_name:
-            self_tuples = self._tree_to_tuples(self)
-            other_tuples = self._tree_to_tuples(other)
-            
-            # Extract the first entries (name/path attribute) of tuples in other_tuples into a set for faster lookup
-            other_first_entries = {t[0] for t in other_tuples}
+        # Convert both trees to sets of tuples
+        set_self = set(self._tree_to_tuples(self, case_sensitive))
+        set_other = set(self._tree_to_tuples(other, case_sensitive))
 
-            # Get the tuples from self_tuples where the first entry (name/path attribute) NOT matches any first entry in other_tuples
-            difference = [t for t in self_tuples if t[0] not in other_first_entries]
-
-        else:
-            # Convert both trees to sets of tuples
-            set_self = set(self._tree_to_tuples(self))
-            set_other = set(self._tree_to_tuples(other))
-
-            # Calculate the difference
-            difference = set_self - set_other
+        # Calculate the difference
+        difference = set_self - set_other
 
         # Convert set of tuples to list of dicts
         return self._tuples_to_dict(difference)
 
 
-    def symmetric_difference(self, other:"Tree") -> set:
+    def symmetric_difference(self, other:"Tree", case_sensitive: bool = True) -> set:
         """
         Identifies differences comparing two Trees and returns the difference as a set of tuples.
         Imortant for inherited SchemaTree: Metadata is not taken into account!
+        When you want to have symmetric difference of inherited Trees (like SchemaTree) only respecting paths, you first have to "cast" your Trees to basic Tree.
+        e.g.:
+        basic_tree1 = schema_tree1.to_tree()
+        basic_tree2 = schema_tree2.to_tree()
+        symmetric_diff = basic_tree1.symmetric_difference(basic_tree2)
 
         Parameters
         ----------
-        other : SchemaTree
-            The other SchemaTree to subtract from this one.
+        other : Tree
+            The other Tree (or inherited class) to subtract from this one.
 
         Returns
         -------
@@ -353,8 +352,8 @@ class Tree:
             raise TypeError(f"Type mismatch: both objects must be of same type for symmetric difference. self: {type(self)}, other: {type(other)}.")
         
         # Convert both trees to sets of tuples
-        set_self = set(self._tree_to_tuples(self))
-        set_other = set(self._tree_to_tuples(other))
+        set_self = set(self._tree_to_tuples(self, case_sensitive))
+        set_other = set(self._tree_to_tuples(other, case_sensitive))
 
         # Calculate the difference
         difference = set_self.symmetric_difference(set_other)
@@ -362,7 +361,7 @@ class Tree:
         # Convert set of tuples to list of dicts
         return self._tuples_to_dict(difference)
 
-    def intersection(self, other: 'Tree', only_by_name:bool = False) -> Optional['Tree']:
+    def intersection(self, other: 'Tree', case_sensitive: bool = True) -> Optional['Tree']:
         """
         Returns the intersection of two Trees as a new Tree
         Metadata is not taken into account for intersection anyways!
@@ -371,6 +370,11 @@ class Tree:
         BUT BE AWARE: When there is only intersection on higher levels and the parents of a node has no intersection (this could happen when not only intersecting by names)
                       then nothing is returned.
                       The intersection has to start from root for intersect branches
+        When you want to have the intersection of inherited Trees (like SchemaTree) only respecting paths, you first have to "cast" your Trees to basic Tree.
+        e.g.:
+        basic_tree1 = schema_tree1.to_tree()
+        basic_tree2 = schema_tree2.to_tree()
+        intersection = basic_tree1.intersection(basic_tree2)
 
         Parameters
         ----------
@@ -384,28 +388,17 @@ class Tree:
         Tree
             A new Tree representing the intersection between both Trees.
         """
-        if only_by_name is False:
-            # When we have to search for every attribute, Trees has to be of same type
-            if type(other) != type(self):
-                raise TypeError(f"Type mismatch: both objects must be of same type for intersection when 'only_by_name=False'. self: {type(self)}, other: {type(other)}.")
+
+        # When we have to search for every attribute, Trees has to be of same type
+        if type(other) != type(self):
+            raise TypeError(f"Type mismatch: both objects must be of same type for intersection when 'only_by_name=False'. self: {type(self)}, other: {type(other)}.")
         
-        if only_by_name:
-            self_tuples = self._tree_to_tuples(self)
-            other_tuples = self._tree_to_tuples(other)
-            
-            # Extract the first entries (name/path attribute) of tuples in other_tuples into a set for faster lookup
-            other_first_entries = {t[0] for t in other_tuples}
+        # Convert both trees to sets of tuples
+        set_self = set(self._tree_to_tuples(self, case_sensitive))
+        set_other = set(self._tree_to_tuples(other, case_sensitive))
 
-            # Get the tuples from self_tuples where the first entry (name/path attribute) matches any first entry in other_tuples
-            intersection = [t for t in self_tuples if t[0] in other_first_entries]
-
-        else:
-            # Convert both trees to sets of tuples
-            set_self = set(self._tree_to_tuples(self))
-            set_other = set(self._tree_to_tuples(other))
-
-            # Calculate the difference
-            intersection = set_self.intersection(set_other)
+        # Calculate the difference
+        intersection = set_self.intersection(set_other)
 
         # Convert the intersection back to a Tree
         if intersection:
@@ -652,7 +645,7 @@ class Tree:
         root = self.get_root()
         return self._get_tree_layered(root)
 
-    def _tree_to_tuples(self, node: 'Tree') -> List[str]:
+    def _tree_to_tuples(self, node: 'Tree', case_sensitive: bool = True) -> List[str]:
         """
         Converts a Tree to a list of tuples representing the tree structure.
         For Tree it's misleading, because it creates not a Tuple, it's only a list of strings.
@@ -662,6 +655,8 @@ class Tree:
         ----------
         node : Tree
             The root-node of tree to convert.
+        case_sensitive: bool
+            Should the path for comparison be transfered to lower-case
 
         Returns
         -------
@@ -672,10 +667,13 @@ class Tree:
             tuples = []
         else:
             path = node.get_path_to_node(".")
+            if not case_sensitive:
+                path = path.lower()
+            
             tuples = [path]
 
         for child in node.get_children():
-            tuples.extend(self._tree_to_tuples(child))
+            tuples.extend(self._tree_to_tuples(child, case_sensitive))
         return tuples
     
     def _tuples_to_dict(self, tuples: set) -> List[dict]:
@@ -709,7 +707,7 @@ class Tree:
 
         # Add child nodes
         for path in sorted_tuples:
-            root.add_path_to_tree(path = path)
+                root.add_path_to_tree(path = path)
         
         if root.equals(Tree("root")):
             pass

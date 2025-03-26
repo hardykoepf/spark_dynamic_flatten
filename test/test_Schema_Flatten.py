@@ -64,7 +64,12 @@ def test_subtract(tm_root, tm_root2):
     difference = tm_root2.subtract(tm_root)
     assert len(difference) == 1
     assert difference == [{'path': 'teams.drivers.nickname', 'data_type': 'string', 'nullable': True, 'element_type': None, 'contains_null': None, 'key_type': None, 'value_type': None}]
-
+    # Only subtract by path -> convert to Tree
+    tm_root = tm_root.to_tree()
+    tm_root2 = tm_root2.to_tree()
+    difference = tm_root2.subtract(tm_root)
+    assert len(difference) == 1
+    assert difference == [{'path': 'teams.drivers.nickname'}]
 
 @pytest.fixture
 def write_flatten_json(tm_root):
@@ -105,12 +110,17 @@ def tm_scrambled():
     return root
 
 def test_intersection(tm_root, tm_scrambled):
-    tree_intersection = tm_root.intersection(tm_scrambled, only_by_name=True)
-    # No nodes/names were changed, so result should be same like tm_root
-    assert tm_root.equals(tree_intersection)
-    tree_intersection = tm_root.intersection(tm_scrambled, only_by_name=False)
+    tree_intersection = tm_root.intersection(tm_scrambled)
     layered = tree_intersection.get_tree_layered()
     assert len(layered[1]) == 1
+    # nodes/names were NOT changed, so result should be same like tm_root when only comparing path as basic Tree
+    tm_root = tm_root.to_tree()
+    tm_scrambled = tm_scrambled.to_tree()
+    assert tm_root.equals(tm_scrambled)
+    tree_intersection = tm_root.intersection(tm_scrambled)
+    layered = tree_intersection.get_tree_layered()
+    tree_intersection.print()
+    assert (len(layered[3]) == 5 and len(layered) == 5 )
 
 if __name__ == "__main__":
     pytest.main([__file__,"-s"])

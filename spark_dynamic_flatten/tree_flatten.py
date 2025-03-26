@@ -163,7 +163,7 @@ class FlattenTree(Tree):
                 # For next iteration set "nearest_node" to actually created new_node
                 nearest_node = new_node
 
-    def _tree_to_tuples(self, node: 'FlattenTree') -> List[Tuple]:
+    def _tree_to_tuples(self, node: 'FlattenTree', case_sensitive: bool = True) -> List[Tuple]:
         """
         Converts a FlattenTree to a list of tuples representing the tree structure.
 
@@ -171,6 +171,8 @@ class FlattenTree(Tree):
         ----------
         node : FlattenTree
             The root-node of tree to convert.
+        case_sensitive: bool
+            Should the path for comparison be transfered to lower-case
 
         Returns
         -------
@@ -181,6 +183,9 @@ class FlattenTree(Tree):
             tuples = []
         else:
             path = node.get_path_to_node(".")
+            if not case_sensitive:
+                path = path.lower()
+
             tuples = [(path, node.get_alias(), node.get_is_identifier())]
         
         for child in node.get_children():

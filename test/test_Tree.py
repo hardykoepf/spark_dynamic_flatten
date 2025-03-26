@@ -102,7 +102,7 @@ def test_equals(create_tree, create_dupl):
     assert create_tree.equals(create_dupl) == False
 
 def test_subtract(create_tree, create_dupl):
-    result = create_tree.subtract(create_dupl)
+    result = create_tree.subtract(create_dupl, True)
     assert len(result) == 0
     # Make changes to one tree
     create_dupl.add_child(Tree("new"))

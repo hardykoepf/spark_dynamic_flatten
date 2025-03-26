@@ -377,7 +377,7 @@ class SchemaTree(Tree):
         # Embed List in dict-key field-paths which is entry point for creating a TreeFlatten
         return StructType(fields)
 
-    def _tree_to_tuples(self, node: 'SchemaTree') -> List[Tuple]:
+    def _tree_to_tuples(self, node: 'SchemaTree', case_sensitive: bool = True) -> List[Tuple]:
         """
         Converts a SchemaTree to a list of tuples representing the tree structure.
 
@@ -385,6 +385,8 @@ class SchemaTree(Tree):
         ----------
         node : SchemaTree
             The root-node of tree to convert.
+        case_sensitive: bool
+            Should the path for comparison be transfered to lower-case
 
         Returns
         -------
@@ -395,6 +397,9 @@ class SchemaTree(Tree):
             tuples = []
         else:
             path = node.get_path_to_node(".")
+            if not case_sensitive:
+                path = path.lower()
+
             tuples = [(path, node.data_type, node.nullable, node.element_type, node.contains_null, node.key_type, node.value_type)]
         
         for child in node.get_children():
