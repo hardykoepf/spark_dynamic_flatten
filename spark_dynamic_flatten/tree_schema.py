@@ -5,7 +5,7 @@ import os
 import json
 from typing import List, Tuple, Optional
 from pyspark.sql.types import StructType, ArrayType, StructField, MapType
-from spark_dynamic_flatten.tree import Tree
+from spark_dynamic_flatten import Tree
 from spark_dynamic_flatten.utils import BASIC_SPARK_TYPES, get_pyspark_sql_type
 
 class SchemaTree(Tree):
