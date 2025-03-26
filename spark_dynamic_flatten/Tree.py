@@ -93,17 +93,8 @@ class Tree:
     def _key(self):
         return (self._name, id(self), "".join(str(x) for x in self.get_ancestors_list()))
 
-    def set_name(self, name:str):
-        """
-        Sets/overwrites the name for the node
-
-        Parameters
-        ----------
-        name: str : Name
-        """
-        self._name = name
-
-    def get_name(self) -> str:
+    @property
+    def name(self) -> str:
         """
         Returns the name of the node
 
@@ -113,7 +104,46 @@ class Tree:
         """
         return self._name
 
-    def get_children(self) -> List["Tree"]:
+    @name.setter
+    def name(self, name:str):
+        """
+        Sets/overwrites the name for the node
+
+        Parameters
+        ----------
+        name: str : Name
+        """
+        self._name = name
+
+    @property
+    def parent(self) -> Union["Tree", None]:
+        """
+        Returns the parent of a node
+
+        Returning
+        ----------
+        Union["Tree", None] : Parent node
+        """
+        return self._parent
+
+    @parent.setter
+    def parent(self, node:"Tree"):
+        """
+        Sets the parent of a node
+
+        Parameters
+        ----------
+        node : Tree
+            Reference to the parent node
+        """
+        assert isinstance(node, Tree)
+        assert type(self) == type (node), "Types of nodes has to be of same type."
+        assert self._parent is None
+        self._parent = node
+        node.add_child(self)
+
+    @property
+    def children(self) -> List["Tree"]:
         """
         Returns the list of children for the node
 
@@ -141,30 +171,7 @@ class Tree:
         if node.get_parent() is None:
             node.set_parent(self)
 
-    def get_parent(self) -> Union["Tree", None]:
-        """
-        Returns the parent of a node
 
-        Returning
-        ----------
-        Union["Tree", None] : Parent node
-        """
-        return self._parent
-
-    def set_parent(self, node:"Tree"):
-        """
-        Sets the parent of a node
-
-        Parameters
-        ----------
-        node : Tree
-            Reference to the parent node
-        """
-        assert isinstance(node, Tree)
-        assert type(self) == type (node), "Types of nodes has to be of same type."
-        assert self._parent is None
-        self._parent = node
-        node.add_child(self)
 
     def get_root(self) -> "Tree":
         """

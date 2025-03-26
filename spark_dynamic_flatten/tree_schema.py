@@ -107,43 +107,50 @@ class SchemaTree(Tree):
                 rep = rep + f" (contains_null = {self.contains_null})"
         return repr(rep)
 
-    def get_data_type(self):
+    @property
+    def data_type(self):
         """
         Returns the data type of the node
         """
         return self.data_type
 
-    def get_nullable(self) -> bool:
+    @property
+    def nullable(self) -> bool:
         """
         Returns the nullable setting of the node
         """
         return self.nullable
     
-    def get_metadata(self) -> dict:
+    @property
+    def metadata(self) -> dict:
         """
         Returns the metadata setting of the node
         """
         return self.metadata
 
-    def get_element_type(self):
+    @property
+    def element_type(self):
         """
         Returns the element_type of the node
         """
         return self.element_type
 
-    def get_contains_null(self):
+    @property
+    def contains_null(self):
         """
         Returns the contains_null setting of element type of the node
         """
         return self.contains_null
 
-    def get_key_type(self):
+    @property
+    def key_type(self):
         """
         Returns the key type of the node
         """
         return self.key_type
 
-    def get_value_type(self):
+    @property
+    def value_type(self):
         """
         Returns the value type of the node
         """
