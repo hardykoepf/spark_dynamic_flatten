@@ -301,7 +301,7 @@ class SchemaTree(Tree):
             if leaf.get_element_type():
                 # When leaf is array (only arrays can have element types), we have to append
                 # a ".*" so that this array will also be exploded in flattening
-                fields.append({"path": {leaf.get_path_to_node(".")} + "." + Tree.WILDCARD_CHAR,
+                fields.append({"path": f"{leaf.get_path_to_node('.')}.{Tree.WILDCARD_CHAR}",
                            "is_identifier": False,
                            "alias": alias})
             else:
