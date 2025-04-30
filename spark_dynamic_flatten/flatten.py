@@ -82,7 +82,7 @@ class Flatten:
                     # Use alias as column_name when alias is set. Otherwise use name of node
                     column_name = leaf.get_alias() if leaf.get_alias() else leaf.get_name()
                 else:
-                    column_name = leaf.get_path_to_node()
+                    column_name = leaf.get_path_to_node(split_char=Flatten.SPLIT_CHAR)
 
                 if condition is None:
                     condition = col(column_name).isNull()
