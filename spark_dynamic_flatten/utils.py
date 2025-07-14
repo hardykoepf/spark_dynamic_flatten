@@ -1,7 +1,7 @@
-from typing import TypeVar
+from typing import Union
 from pyspark.sql.types import StringType, IntegerType, FloatType, BooleanType, DoubleType, LongType, ShortType, ByteType, DateType, TimestampType, DecimalType, BinaryType, NullType, DataType, MapType
 
-BASIC_SPARK_TYPES = TypeVar(StringType,  # pylint: disable=C0103
+BASIC_SPARK_TYPES = Union[StringType,  # pylint: disable=C0103
                             IntegerType,
                             FloatType,
                             BooleanType,
@@ -15,7 +15,7 @@ BASIC_SPARK_TYPES = TypeVar(StringType,  # pylint: disable=C0103
                             BinaryType,
                             NullType,
                             DataType
-                            )
+]
 
 def get_pyspark_sql_type(typename: str) -> DataType:
     """
