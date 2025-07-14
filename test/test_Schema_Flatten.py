@@ -1,3 +1,5 @@
+# Make sure to run "pip install -e ." first, when running in Debug mode!
+
 import os
 import json
 import pytest
