@@ -52,7 +52,7 @@ class TreeManager:
         # Create root instance of
         self.root = tree_class("root")
 
-    def add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False) -> Tree:
+    def add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False, explode_with_pos:bool = False) -> Tree:
         """
         Adds a path to tree and defines for leaf-node, if the leaf should be renmamed (aliased)
         and if it's an key-like value.
@@ -70,7 +70,7 @@ class TreeManager:
             should the nested field be handled as key-field (Default = False)
         """
         # Hand-over parameters to tree-specific function
-        self.root.add_path_to_tree(path, alias, is_identifier)
+        self.root.add_path_to_tree(path, alias, is_identifier, explode_with_pos)
 
     def print_tree(self) -> None:
         """

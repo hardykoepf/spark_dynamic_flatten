@@ -34,6 +34,12 @@ class FlattenTree(Tree):
         get_is_identifier(self) -> bool:
             Retrieves the is_identifier of the current FlattenTree node.
 
+        set_explode_with_pos(self, explode_with_pos:bool) -> None:
+            Sets the explode with_pos for the current FlattenTree node.
+
+        get_explode_with_pos(self) -> bool:
+            Retrieves the explode_With_pos of the current FlattenTree node.
+
         is_child_wildcard(self) -> bool:
             Checks if at least one child is a wildcard (child name="*")
 
@@ -48,6 +54,7 @@ class FlattenTree(Tree):
                  name:str = 'root',
                  alias:str = None,
                  is_identifier:bool = False,
+                 explode_with_pos:bool = False,
                  parent:Optional['Tree'] = None,
                  children:Optional[List['Tree']] = None
                 ):
@@ -65,13 +72,17 @@ class FlattenTree(Tree):
         self._alias = alias
         # is_identifier needed for Flattening
         self._is_identifier = is_identifier
+        # explode_with_pos needed for Flattening
+        self._explode_with_pos = explode_with_pos
 
     def __repr__(self):
         rep = f"{self._name}"
         if self._alias is not None:
             rep = rep + f" (alias = {self._alias})"
-        if self._is_identifier is not None:
+        if self._is_identifier:
             rep = rep + f" (is_identifier = {self._is_identifier})"
+        if self._explode_with_pos:
+            rep = rep + f" (explode_with_pos = {self._explode_with_pos})"
         return repr(rep)
 
     def set_alias(self, alias:str) -> None:
@@ -113,6 +124,27 @@ class FlattenTree(Tree):
         bool : Is the node identifier
         """
         return self._is_identifier
+    
+    def set_explode_with_pos(self, explode_with_pos:bool) -> None:
+        """
+        Set to True if node needs to be exploded with additional position column. Otherwise False
+        
+        Parameter
+        ---------
+        explode_with_pos : Needs the node (has to be an array/map) to be exploded with position column
+        """
+        self._explode_with_pos = explode_with_pos
+
+    def get_explode_with_pos(self) -> bool:
+        """
+        Returns the explode_with_pos attribute of the node.
+
+        Returning
+        ---------
+        bool : Is the node to be exploded with position
+        """
+        return self._explode_with_pos
+
 
     def is_child_wildcard(self) -> bool:
         """
@@ -128,7 +160,7 @@ class FlattenTree(Tree):
                 return True
         return False
 
-    def add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False) -> None:
+    def add_path_to_tree(self, path:str, alias:str = None, is_identifier:bool = False, explode_with_pos:bool = False) -> None:
         """
         Adds a path (pigeonhole) to the tree. Overwrite method of super class.
         This node also takes care about having alias and is_identifier on leaf nodes
@@ -141,7 +173,12 @@ class FlattenTree(Tree):
             Alias name for this path/field
         is_identifier : bool
             Is the path/field key to target table
+        explode_with_pos : bool
+            Explode the path with position
         """
+        # Sanity check: When explode_with_pos is set to True, also an alias has to be provided
+        if explode_with_pos and alias is None:
+            raise ValueError(f"{path}: When 'explode_with_pos' is set to True, also an alias has to be provided.")
         # Split path
         path_list = path.split(".")
         # Search if the complete path is already existing.
@@ -152,7 +189,7 @@ class FlattenTree(Tree):
                 # Create new node
                 if missing_node == missing_path[-1]:
                     # This is a leaf - so we have to add also the alias to the leaf
-                    new_node = FlattenTree(missing_node, parent = nearest_node, alias = alias, is_identifier = is_identifier)
+                    new_node = FlattenTree(missing_node, parent = nearest_node, alias = alias, is_identifier = is_identifier, explode_with_pos = explode_with_pos)
                     if missing_node == Tree.WILDCARD_CHAR:
                         # When name of leaf-node is Wildcard, this is a special case and details has to be inherited to parent
                         nearest_node.set_alias(alias)
@@ -162,6 +199,12 @@ class FlattenTree(Tree):
                 nearest_node.add_child(new_node)
                 # For next iteration set "nearest_node" to actually created new_node
                 nearest_node = new_node
+        else:
+            # Set attributes to already existing node/path. At least needed for array which should be exploded with position.
+            # Therefore maybe the node in the middle was already created by another leaf in configuration.
+            nearest_node.set_alias(alias)
+            nearest_node.set_is_identifier(is_identifier)
+            nearest_node.set_explode_with_pos(explode_with_pos)
 
     def _tree_to_tuples(self, node: 'FlattenTree', case_sensitive: bool = True) -> List[Tuple]:
         """
@@ -186,14 +229,14 @@ class FlattenTree(Tree):
             if not case_sensitive:
                 path = path.lower()
 
-            tuples = [(path, node.get_alias(), node.get_is_identifier())]
+            tuples = [(path, node.get_alias(), node.get_is_identifier(), node.get_explode_with_pos())]
         
         for child in node.get_children():
             tuples.extend(self._tree_to_tuples(child))
         return tuples
 
     def _tuples_to_dict(self, tuples: set) -> List[dict]:
-        return [{"path": x[0], "alias": x[1], "is_identifier": x[2]} for x in tuples]
+        return [{"path": x[0], "alias": x[1], "is_identifier": x[2], "explode_with_pos": x[3]} for x in tuples]
 
     def _tuples_to_tree(self, tuples: List[Tuple]) -> 'FlattenTree':
         """
@@ -219,10 +262,11 @@ class FlattenTree(Tree):
         sorted_tuples = sorted(tuples, key=lambda x: len(x[0]))
 
         # Add child nodes
-        for path, alias, is_identifier in sorted_tuples:
+        for path, alias, is_identifier, explode_with_pos in sorted_tuples:
             root.add_path_to_tree(path = path,
                                    alias = alias,
                                    is_identifier = is_identifier,
+                                   explode_with_pos = explode_with_pos
                                     )
 
         if root.equals(FlattenTree("root")):
@@ -278,6 +322,17 @@ class FlattenTree(Tree):
                     contains_null=struct_node.get_contains_null(),
                     key_type=struct_node.get_key_type(),
                     value_type=struct_node.get_value_type(),
+                    parent=result_tree
+                )
+                result_tree.add_child(result_node)
+            elif node.get_explode_with_pos():
+                # When an array has to be exploded with position, the position column has to be also part of the structure
+                result_node = SchemaTree(
+                    name=node.get_alias() if node.get_alias() else node.get_name(),
+                    data_type=struct_node.IntegerType(),
+                    nullable=True,
+                    metadata={},
+                    element_type=struct_node.StructField,
                     parent=result_tree
                 )
                 result_tree.add_child(result_node)
