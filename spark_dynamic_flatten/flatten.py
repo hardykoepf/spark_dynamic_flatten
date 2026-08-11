@@ -2,7 +2,7 @@
 
 from typing import Optional, Tuple, List
 from pyspark.sql import DataFrame
-from pyspark.sql.functions import col, explode_outer
+from pyspark.sql.functions import col, explode_outer, posexplode_outer
 from pyspark.sql.types import ArrayType, StructType
 from spark_dynamic_flatten import FlattenTree
 
@@ -39,24 +39,40 @@ class Flatten:
         map_alias = []
         list_of_alias = []
         duplicates = []
-        for leaf in leafs:
-            if leaf.get_name() == Flatten.WILDCARD_CHAR:
-                # Wildcard is placeholder to explode array with element type. Has to be ignored for renaming
-                # thats why parent of this leaf is the truth and set as leaf
-                leaf = leaf.get_parent()
+        rename_to = None
+        for node in root_node.walk_tree():
+            if node.is_leaf():
+                # Normal case, when we have a leaf node which was flattened
+                if node.get_name() == Flatten.WILDCARD_CHAR:
+                    # Wildcard is placeholder to explode array with element type. Has to be ignored for renaming
+                    # thats why parent of this leaf is the truth and set as leaf
+                    node = node.get_parent()
 
-            path_of_leaf = leaf.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
-            if leaf.get_alias() is None:
-                rename_to = leaf.get_name()
-            else:
-                rename_to = leaf.get_alias()
-            map_alias.append((path_of_leaf, rename_to))
+                path_of_leaf = node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
+                if node.get_alias() is None:
+                    rename_to = node.get_name()
+                else:
+                    rename_to = node.get_alias()
+                map_alias.append((path_of_leaf, rename_to))
+
+                # Check for duplicates
+                if rename_to in list_of_alias:
+                    duplicates.append(rename_to)
+                else:
+                    list_of_alias.append(rename_to)
+            elif node.get_explode_with_pos():
+                # We have a node which was exploded with position. Therefore we have to add the position column to the map
+                # otherwise the position column will not be available after renaming
+                rename_to = node.get_alias()
+                name_of_path = f"{node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)}{Flatten.SPLIT_CHAR}{rename_to}"
+                map_alias.append((name_of_path, rename_to))
 
             # Check for duplicates
-            if rename_to in list_of_alias:
-                duplicates.append(rename_to)
-            else:
-                list_of_alias.append(rename_to)
+            if rename_to:
+                if rename_to in list_of_alias:
+                    duplicates.append(rename_to)
+                else:
+                    list_of_alias.append(rename_to)
 
         # Check if names are distinct
         assert len(duplicates) == 0, f"Column names of final DataFrame are not unique. Alias following fields: {duplicates}"
@@ -184,8 +200,19 @@ class Flatten:
             # When array has StructType as elementType, add to struct_fields
             if isinstance(field.dataType.elementType, StructType):
                 struct_fields.append((field, node))
-            # When column was found, explode array
-            df = df.withColumn(column_name, explode_outer(col(column_name)))
+            # Check if the node is having 'explode_with_pos' set to True. If so, use posexplode_outer and the alias as name for the pos column
+            if node.get_explode_with_pos():
+                path_to_node = node.get_path_to_node(split_char = Flatten.SPLIT_CHAR)
+                alias_node = node.get_alias()
+                if alias_node is None:
+                    raise ValueError(f"Field {path_to_node} is having 'explode_with_pos' set, but no alias is defined. Alias mandatory in this case.")
+                pos_col_name = f"{path_to_node}{Flatten.SPLIT_CHAR}{alias_node}"
+                df = df.select(
+                    *[c for c in df.columns if c != column_name],
+                    posexplode_outer(col(column_name)).alias(pos_col_name, column_name)
+                )
+            else:
+                df = df.withColumn(column_name, explode_outer(col(column_name)))
 
         # Second select all relevant fields within StrucType on this level
         for field, node in struct_fields:
