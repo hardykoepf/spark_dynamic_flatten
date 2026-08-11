@@ -9,6 +9,7 @@ This project provides tools for working with (Py)Spark dataframes, including fun
 ## Features
 
 - Dynamically flatten nested PySpark dataframes based on configuration (only flatten what is needed).
+- Track array element positions during flattening using the `explode_with_pos` configuration.
 - Compare schemas of different PySpark dataframes.
 - Utility functions for schema manipulation and validation.
 
@@ -20,49 +21,47 @@ To install the dependencies for this project, you can use [Poetry](https://pytho
    ```sh
    git clone https://github.com/hardykoepf/spark_dynamic_flatten.git
    cd spark_dynamic_flatten
+   ```
 
-2. Alternatively this is on pypi:
-```
-pip install pyspark-dynamic-flatten
-```
+2. Alternatively, install it from PyPI:
+   ```sh
+   pip install pyspark-dynamic-flatten
+   ```
 
 ## Classes within this solution
 
 The solution consists of three classes implementing specific trees:
-- Tree: Basic tree class implementing standard tree data stucture with nodes referencing to the parent node and to the children nodes
-- SchemaTree: Inherited from Tree. Especially for handling schemas of (pyspark) spark dataframes. With this class you can for example generate a json config file for Flatten class based on a dataframe schema.
-- FlattenTree: Inherited from Tree. Especially for flattening a nested schema of spark dataframe
+- **Tree**: Basic tree class implementing a standard tree data structure with nodes referencing the parent node and the children nodes.
+- **SchemaTree**: Inherited from `Tree`. Specifically for handling schemas of (PySpark) dataframes. With this class, you can, for example, generate a JSON config file for the `Flatten` class based on a dataframe schema.
+- **FlattenTree**: Inherited from `Tree`. Specifically for flattening a nested schema of a Spark dataframe.
 
-Also besides the trees, a TreeManager offers methods for creating a tree based on json file, json string or spark schema.  
-  
-The flattening is executed within the Flatten class.
+Additionally, a `TreeManager` offers methods for creating a tree based on a JSON file, JSON string, or Spark schema.  
 
-### General tree functions
+The flattening is executed within the `Flatten` class.
 
-The trees are defined to be self managed. This means there is no separation between a tree and node in implementation.  
-  
-To get a quick overview how the tree is looking like, the method print() is printing the tree:
-```
+### General Tree Functions
+
+The trees are defined to be self-managed. This means there is no separation between a tree and node in implementation.  
+
+To get a quick overview of how the tree looks, the `print()` method prints the tree:
+```python
 root_node_of_tree.print()
 ```
-  
-If you need to have the tree as list, the function get_tree_as_list() will return a list with the complete path to every node.
-```
+
+If you need the tree as a list, the `get_tree_as_list()` function will return a list with the complete path to every node:
+```python
 root_node_of_tree.get_tree_as_list()
 ```
-  
-The method get_tree_layered() will return the tree as a nested list. Which means the layers are represented by a separate list with the nodes of this layer. The outer list keeps all the lists together.  
-The list on index 0 from outer list holds the nodes of layer 1. On index 1 represents layer 2 and so on.  
-[[nodes_layer_1], [nodes_layer_2], [nodes_layer_3], [nodes_layer_4], ...]
-```
+
+The `get_tree_layered()` method will return the tree as a nested list. Each layer is represented by a separate list, and the outer list contains all the layers:
+```python
 root_node_of_tree.get_tree_layered()
 ```
 
-#### Comparing Trees
-Comparing trees is really helpful. Therefore you can use the equals function.
-This will work for all kind of trees and will return True if the two trees you compare are equal.
+### Comparing Trees
 
-```
+Comparing trees is helpful for identifying differences between schemas. Use the `equals` function to check if two trees are equal:
+```python
 from spark_dynamic_flatten import TreeManager
 
 tree_schema1 = TreeManager.from_struct_type(df1.schema)
@@ -72,133 +71,118 @@ if tree_schema1.equals(tree_schema2):
     print("Schemas are equal")
 ```
 
-#### Symmetric difference of Trees
-To see, how trees differ in both directions, the symmetric_difference function will return a set of tuples (every tuple represents is one node/path).
-Enhancing above example with symmetric_difference:
+Other tree comparison functions include:
+- **Symmetric Difference**: Use `symmetric_difference` to find differences in both directions.
+- **Subtraction**: Use `subtract` to find paths in one tree that are not in another.
+- **Intersection**: Use `intersection` to find the common parts of two trees.
 
-```
-from spark_dynamic_flatten import TreeManager
+### Flattening Dataframes
 
-tree_schema1 = TreeManager.from_struct_type(df1.schema)
-tree_schema2 = TreeManager.from_struct_type(df2.schema)
+The `Flatten` class provides the main functionality for flattening nested dataframes. The configuration defines the paths to be flattened, aliases, and whether fields are identifiers.
 
-if tree_schema1.equals(tree_schema2):
-    print("Schemas are equal")
-else:
-    difference = tree_schema1.symmetric_difference(tree_schema2)
-    print("Following symmetric differences (set of tuples):)
-    print(difference)
-```
+#### New Feature: Track Array Element Positions
 
-#### Subtraction of Trees
-you can also subtract one tree from another and see what paths will remain.
-The result will be a set of tuples (every tuple represents is one node/path).
-It's more or less similar to symmetric_difference, but subtract only works in one direction.
+The `explode_with_pos` configuration allows you to track the position of array elements during flattening. When this option is enabled for a specific field, the position of each array element will be included in the flattened dataframe as a separate column.
 
-```
-from spark_dynamic_flatten import TreeManager
+##### Configuration for `explode_with_pos`
 
-tree_schema1 = TreeManager.from_struct_type(df1.schema)
-tree_schema2 = TreeManager.from_struct_type(df2.schema)
+To enable this feature, set the `explode_with_pos` attribute to `True` for the relevant field in the configuration. Additionally, you must define an alias for the position column.
 
-if tree_schema1.equals(tree_schema2):
-    print("Schemas are equal")
-else:
-    difference = tree_schema1.subtract(tree_schema2)
-    print("Following differences when subtracting tree_schema2 from tree_schema1 (set of tuples):)
-    print(difference)
-```
-
-#### Intersection of trees
-Instead of searching for differences, you can search for intersection of two trees. 
-Result will be the "lowest common denominator" of both trees.  
-The result of this function will not be a simple set - it will return the common part of the trees.
-When there are no common parts, the result will be None.  
-This will be helpful when you have two Schemas and search for similarities.
-
-```
-from spark_dynamic_flatten import TreeManager
-
-tree_schema1 = TreeManager.from_struct_type(df1.schema)
-tree_schema2 = TreeManager.from_struct_type(df2.schema)
-
-common_denominator =  tree_schema1.intersection(tree_schema2, only_by_names=True)
-if common_denominator:
-    common_denominator.print()
-```
-
-
-## Usage
-
-Because two different use cases are implemented, we have to separate. But the use-cases behind these classes are related to each other.  
-
-### Schemas
-
-For importing a spark schema as a structured tree, you have the option to use a Json file representing a spark schema, or you can import a json string representing a schema or at least using directly a StrucType.  
-In general, when creating a tree the TreeManager comes into play. The TreeManager offers methods for generating the right type of tree.  
-Especially for schemas, following static methods are offered (creating a Tree of SchemaTree instance nodes):
-- TreeManager.from_struct_type(struct) -> TreeManager
-- TreeManager.from_schema_json_string(json_str) -> TreeManager
-- TreeManager.from_schema_json_file(json_file) -> TreeManager
-
-For Schemas, the nodes are instances of SchemaTree class.
-
-
-#### Generate configuration for fully flattening a dataframe
-
-After parsing the schema of dataframe to a tree object, we generate the json config we can use for completely flatten the dataframe (or modify if we only need specific fields flattened).  
-In general this package should be used if you don't need to fully flatten. So only take whats needed as configuration.
-But be also aware: leaf nodes can have the same name in different branches.  
-When there are "duplicates", the name will be incremented by a number to be unique. This behaviour can be preserved when defining an alias in configuration for the duplicates.
-
-```
-from spark_dynamic_flatten import TreeManager
-
-tree_schema1 = TreeManager.from_struct_type(df1.schema)
-json_string = tree_schema1.generate_fully_flattened_json()
-```
-
-### Flatten
- 
-The configuration for flatten a nested structure is defined by the path to the leaf fields separated by a dot.  
-E.g. node1.node2.node3.leaf_field  
-For every path/field a alias and also the boolean if the field should be an identifier (key) for the flattened table is defined.  
-To summarize, for every path/field to be flattened, a dictionary with following keys has to be defined:
-- path
-- alias
-- is_identifier
-
-E.g.:  
-{"path": "node1.node2.node3.leaf_field", "alias": "leaf_alias", "is_identifier": False}  
-  
-At least, the paths are collected by an outer dict with the key "field_paths"  
-E.g.:
-```
-{ "field_paths": [
-    {"path": "node1.node2.node3.leaf_field", "alias": "leaf_alias", "is_identifier": False},
-    {"path": "node11.node22.node33.leaf_field2", "alias": None, "is_identifier": False}
-    ]
+Example configuration:
+```json
+{
+  "field_paths": [
+    {
+      "path": "node1.node2.array_field",
+      "alias": "array_value",
+      "is_identifier": False,
+      "explode_with_pos": True
+    }
+  ]
 }
+```
 
+In this example:
+- `path`: The path to the array field to be exploded.
+- `alias`: The alias for the array values.
+- `is_identifier`: Whether this field is an identifier.
+- `explode_with_pos`: Enables tracking of array element positions.
+
+The position column will be named using the alias defined in the configuration. For example, if the alias is `array_value`, the position column will be named `node1.node2.array_field#array_value`.
+
+##### Example Usage
+
+```python
+from spark_dynamic_flatten import TreeManager, Flatten
+
+# Load the configuration
+json_config = """
+{
+  "field_paths": [
+    {
+      "path": "node1.node2.array_field",
+      "alias": "array_value",
+      "is_identifier": False,
+      "explode_with_pos": True
+    }
+  ]
+}
+"""
+
+# Create a FlattenTree from the configuration
+root_tree = TreeManager.from_flatten_json_string(json_config)
+
+# Flatten the dataframe
+df_flattened = Flatten.flatten(df, root_tree)
+
+# The resulting dataframe will include a position column for the array elements
+df_flattened.show()
 ```
-This json configuration could be generated based on a Dataframe schema. See above example with using method "generate_fully_flattened_json" based on a SchemaTree.  
-  
-To import the configuration, you have the option to have it as json file, json string or within a dict. Therefore again the TreeManager is used.
-- TreeManager.from_flatten_type(struct) -> FlattenTree
-- TreeManager.from_flatten_json_string(json_str) -> FlattenTree
-- TreeManager.from_flatten_json_file(json_file) -> FlattenTree
-  
-When a FlattenTree was instanciated by the configuration, you use this instance together with the Dataframe to be flattened and call flatten method of class Flatten:
+
+#### General Flatten Configuration
+
+The configuration for flattening a nested structure is defined by the path to the leaf fields separated by a dot.  
+E.g. `node1.node2.node3.leaf_field`  
+For every path/field, an alias and a boolean indicating if the field should be an identifier (key) for the flattened table are defined.  
+
+To summarize, for every path/field to be flattened, a dictionary with the following keys has to be defined:
+- `path`
+- `alias`
+- `is_identifier`
+
+Example:
+```json
+{"path": "node1.node2.node3.leaf_field", "alias": "leaf_alias", "is_identifier": False}
 ```
-from spark_dynamic_flatten import TreeManager
-from spark_dynamic_flatten import FlattenTree
-from spark_dynamic_flatten import Flatten
+
+At least, the paths are collected by an outer dictionary with the key `field_paths`:
+```json
+{
+  "field_paths": [
+    {"path": "node1.node2.node3.leaf_field", "alias": "leaf_alias", "is_identifier": False},
+    {"path": "node11.node22.node33.leaf_field2", "alias": null, "is_identifier": False}
+  ]
+}
+```
+
+This JSON configuration can be generated based on a dataframe schema. See the example above using the `generate_fully_flattened_json` method based on a `SchemaTree`.  
+
+To import the configuration, you have the option to have it as a JSON file, JSON string, or within a dictionary. Use the `TreeManager` for this:
+- `TreeManager.from_flatten_type(struct) -> FlattenTree`
+- `TreeManager.from_flatten_json_string(json_str) -> FlattenTree`
+- `TreeManager.from_flatten_json_file(json_file) -> FlattenTree`
+
+When a `FlattenTree` is instantiated by the configuration, use this instance together with the dataframe to be flattened and call the `flatten` method of the `Flatten` class:
+```python
+from spark_dynamic_flatten import TreeManager, FlattenTree, Flatten
 
 root_tree = TreeManager.from_flatten_json_string(json_string)
 df_flattened = Flatten.flatten(df1, root_tree)
-
 ```
-  
-The flatten method has to additional optional attributes called:
-- rename_columns: Renames the colums of flattened Dataframe to its leaf nodes (or alias when an alias was defined in configuration)
-- filter_null_rows: When only identifier columns will have meaningful values and all non-identifying columns will have NULL values, these rows will be filtered in flattened Dataframe.
+
+The `flatten` method has two additional optional attributes:
+- `rename_columns`: Renames the columns of the flattened dataframe to their leaf nodes (or aliases if defined in the configuration).
+- `filter_null_rows`: Filters rows where all non-identifier columns have `NULL` values.
+```python
+df_flattened = Flatten.flatten(df, root_tree, rename_columns=True, filter_null_rows=True)
+```
