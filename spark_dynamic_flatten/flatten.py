@@ -39,8 +39,8 @@ class Flatten:
         map_alias = []
         list_of_alias = []
         duplicates = []
-        rename_to = None
         for node in root_node.walk_tree():
+            rename_to = None # Start every iteration with empty variable
             if node.is_leaf():
                 # Normal case, when we have a leaf node which was flattened
                 if node.get_name() == Flatten.WILDCARD_CHAR:
@@ -55,11 +55,6 @@ class Flatten:
                     rename_to = node.get_alias()
                 map_alias.append((path_of_leaf, rename_to))
 
-                # Check for duplicates
-                if rename_to in list_of_alias:
-                    duplicates.append(rename_to)
-                else:
-                    list_of_alias.append(rename_to)
             elif node.get_explode_with_pos():
                 # We have a node which was exploded with position. Therefore we have to add the position column to the map
                 # otherwise the position column will not be available after renaming
